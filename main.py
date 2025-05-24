@@ -9,15 +9,15 @@ def read_root():
 
 ################################### AUTH
 
-@app.get("/auth/login") # POST
+@app.post("/auth/login") # POST
 def auth_login():
     ...
 
-@app.get("/auth/register") # POST
+@app.post("/auth/register") # POST
 def auth_register():
     ...
     
-@app.get("/auth/refresh-token") # POST
+@app.post("/auth/refresh-token") # POST
 def auth_refresh_token():
     ...
     
@@ -27,7 +27,7 @@ def auth_refresh_token():
 def clients_get():
     ...
     
-@app.get("/clients") # POST
+@app.post("/clients") # POST
 def clients_post():
     ...
     
@@ -35,11 +35,11 @@ def clients_post():
 def clients_get():
     ...
 
-@app.get("/clients/{id}") # PUT
+@app.put("/clients/{id}") # PUT
 def clients_put():
     ...
     
-@app.get("/clients/{id}") # DELETE
+@app.delete("/clients/{id}") # DELETE
 def clients_delete():
     ...
     
@@ -49,7 +49,7 @@ def clients_delete():
 def products_get():
     ...
     
-@app.get("/products") # POST
+@app.post("/products") # POST
 def products_post():
     ...
     
@@ -57,11 +57,11 @@ def products_post():
 def products_get():
     ...
 
-@app.get("/products/{id}") # PUT
+@app.put("/products/{id}") # PUT
 def products_put():
     ...
     
-@app.get("/products/{id}") # DELETE
+@app.delete("/products/{id}") # DELETE
 def products_delete():
     ...
     
@@ -71,7 +71,7 @@ def products_delete():
 def orders_get():
     ...
     
-@app.get("/orders") # POST
+@app.post("/orders") # POST
 def orders_post():
     ...
     
@@ -79,10 +79,10 @@ def orders_post():
 def orders_get():
     ...
 
-@app.get("/orders/{id}") # PUT
+@app.put("/orders/{id}") # PUT
 def orders_put():
     ...
     
-@app.get("/orders/{id}") # DELETE
+@app.delete("/orders/{id}") # DELETE
 def orders_delete():
     ...
