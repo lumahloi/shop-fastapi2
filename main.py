@@ -1,40 +1,71 @@
 from pydantic import BaseModel, Field
 from typing import Union, Annotated
-from fastapi import FastAPI, Query
-
-################################### baseModels
-
-class User(BaseModel):
-    usr_email: str = Query(max_length=20)
-    usr_pass: str = Query(max_length=20)
-    
-class Client(BaseModel):
-    cli_name: Union[str, None] = Query(max_length=20)
-    cli_email: Union[str, None] = Query(max_length=20)
-    cli_cpf: Union[str, None] = Query(max_length=11)
-    
-class Product(BaseModel):
-    prod_cat: Union[str, None]
-    prod_price: Union[float, None]
-    prod_avail: Union[bool, None]
-    prod_desc: str = Query(max_length=100)
-    prod_price: float
-    prod_barcode: str
-    prod_section: str
-    prod_stock: int = Field(0, gt=0)
-    prod_val: str
-    prod_imgs: str
-    
-class Order(BaseModel):
-    order_period: Union[str, None]
-    order_section: Union[str, None]
-    order_id: Union[str, None]
-    order_status: Union[str, None]
-    order_cli: Union[str, None]
-    order_prods: list
+from fastapi import FastAPI, Query, Depends
+from sqlmodel import SQLModel, create_engine, Session
 
 
 app = FastAPI()
+
+
+################################### database
+
+postgresql_file_name = ".db"
+postgresql_url = f"postgresql:///{postgresql_file_name}"
+connect_args = {"check_same_thread": False}
+engine = create_engine(postgresql_url, connect_args=connect_args)
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]
+
+
+# For production you would probably use a migration script that runs before you start your app. 🤓 SQLModel will have migration utilities wrapping Alembic, but for now, you can use Alembic directly.
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
+
+################################### baseModels
+
+class User(BaseModel, SQLModel, table=True):
+    usr_id: int = Field(primary_key=True)
+    usr_email: str = Query(max_length=20)
+    usr_pass: str = Query(max_length=20)
+    
+class Client(BaseModel, SQLModel, table=True):
+    cli_id: int = Field(default=None, primary_key=True)
+    cli_name: Union[str, None] = Query(max_length=20), Field(index=True)
+    cli_email: Union[str, None] = Query(max_length=20), Field(index=True)
+    cli_cpf: Union[str, None] = Query(max_length=11), Field(index=True)
+    
+class Product(BaseModel, SQLModel, table=True):
+    prod_id: int = Field(default=None, primary_key=True)
+    prod_cat: str | None  = Field(index=True)
+    prod_price: float = Field(index=True)
+    prod_avail: bool  = Field(index=True)
+    prod_desc: str | None = Query(max_length=100)
+    prod_price: float
+    prod_barcode: str | None 
+    prod_section: str | None 
+    prod_stock: int = Field(0, gt=0)
+    prod_dtval: str | None 
+    prod_imgs: str
+    
+class Order(BaseModel, SQLModel, table=True):
+    order_id: int = Field(default=None, primary_key=True, index=True)
+    order_period: Union[str, None] = Field(index=True)
+    order_section: Union[str, None] = Field(index=True)
+    order_status: Union[str, None] = Field(index=True)
+    order_cli: Union[str, None] = Field(index=True)
+    order_prods: list
+
 
 @app.get("/")
 def read_root():
