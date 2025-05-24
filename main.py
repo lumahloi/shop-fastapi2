@@ -1,7 +1,6 @@
 from typing import Union, Annotated
 from fastapi import FastAPI, Query, Depends, HTTPException
 from sqlmodel import SQLModel, create_engine, Session, select, Field
-from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -36,40 +35,54 @@ def on_startup():
 
 class User(SQLModel, table=True):
     usr_id: int = Field(primary_key=True)
+    usr_name: str = Query(max_length=40)
     usr_email: str = Query(max_length=20)
     usr_pass: str = Query(max_length=20)
+    usr_type: int
+    usr_active: bool
+    usr_createdat: str
+    usr_lastupdate: str
     
 class Client(SQLModel, table=True):
-    cli_id: int = Field(default=None, primary_key=True)
-    cli_name: Union[str, None] = Query(max_length=20), Field(index=True)
-    cli_email: Union[str, None] = Query(max_length=20), Field(index=True)
-    cli_cpf: Union[str, None] = Query(max_length=11), Field(index=True)
+    cli_id: int = Field(primary_key=True)
+    cli_name: str = Query(max_length=20), Field(index=True)
+    cli_email: str = Query(max_length=20), Field(index=True)
+    cli_cpf: str = Query(max_length=11), Field(index=True)
+    cli_phone: str = Query(max_length=11)
+    cli_address: str = Query(max_length=100)
+    cli_createdat: str
+    cli_active: bool
     
 class Product(SQLModel, table=True):
-    prod_id: int = Field(default=None, primary_key=True)
-    prod_cat: str | None  = Field(index=True)
+    prod_id: int = Field(primary_key=True)
+    prod_name: str = Query(max_length=100), Field(index=True)
+    prod_desc: str = Query(max_length=100)
     prod_price: float = Field(index=True)
-    prod_avail: bool  = Field(index=True)
-    prod_desc: str | None = Query(max_length=100)
-    prod_price: float
-    prod_barcode: str | None 
-    prod_section: str | None 
     prod_stock: int = Field(0, gt=0)
-    prod_dtval: str | None 
-    prod_imgs: str
+    prod_size: list
+    prod_color: list
+    prod_cat: str = Field(index=True)
+    prod_imgs: list
+    prod_active: bool = Field(index=True)
+    prod_barcode: str 
+    prod_section: str 
+    prod_dtval: str 
+    prod_createdat: str
+    prod_lastupdate: str
     
 class Order(SQLModel, table=True):
-    order_id: int = Field(default=None, primary_key=True, index=True)
-    order_period: Union[str, None] = Field(index=True)
-    order_section: Union[str, None] = Field(index=True)
-    order_status: Union[str, None] = Field(index=True)
-    order_cli: Union[str, None] = Field(index=True)
+    order_id: int = Field(primary_key=True, index=True)
+    order_cli: int = Field(index=True)
+    order_period: str = Field(index=True)
+    order_status: str = Field(index=True)
+    order_total: float
+    order_typepay: str
+    order_address: str = Query(max_length=100)
+    order_section: str = Field(index=True)
     order_prods: list
+    order_createdat: str
 
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
 
 ################################### AUTH
 
