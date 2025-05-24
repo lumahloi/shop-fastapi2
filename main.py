@@ -1,91 +1,24 @@
-from typing import Union, Annotated
-from fastapi import FastAPI, Query, Depends, HTTPException
-from sqlmodel import SQLModel, create_engine, Session, select, Field
+from fastapi import FastAPI, Query, HTTPException
+from sqlmodel import select
+from typing import  Annotated
+from datetime import datetime
+import re
+
+from services.database import create_db_and_tables
+from services.sql_models import User, Client, Product, Order
+from services.sql_models import UserCreate, ClientCreate, ProductCreate, OrderCreate
+from services.session import SessionDep
+
 
 
 app = FastAPI()
 
-
-################################### database
-
-postgresql_file_name = "shop-fastapi"
-port = 5432
-host = 'localhost'
-user = 'postgres'
-password = 1234567890
-
-postgresql_url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{postgresql_file_name}"
-engine = create_engine(postgresql_url)
-
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
-
-
-def get_session():
-    with Session(engine) as session:
-        yield session
-
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 
 # For production you would probably use a migration script that runs before you start your app. 🤓 SQLModel will have migration utilities wrapping Alembic, but for now, you can use Alembic directly.
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
-
-
-################################### baseModels
-
-class User(SQLModel, table=True):
-    usr_id: int = Field(primary_key=True)
-    usr_name: str = Query(max_length=40)
-    usr_email: str = Query(max_length=20)
-    usr_pass: str = Query(max_length=20)
-    usr_type: int
-    usr_active: bool
-    usr_createdat: str
-    usr_lastupdate: str
-    
-class Client(SQLModel, table=True):
-    cli_id: int = Field(primary_key=True)
-    cli_name: str = Query(max_length=20), Field(index=True)
-    cli_email: str = Query(max_length=20), Field(index=True)
-    cli_cpf: str = Query(max_length=11), Field(index=True)
-    cli_phone: str = Query(max_length=11)
-    cli_address: str = Query(max_length=100)
-    cli_createdat: str
-    cli_active: bool
-    
-class Product(SQLModel, table=True):
-    prod_id: int = Field(primary_key=True)
-    prod_name: str = Query(max_length=100), Field(index=True)
-    prod_desc: str = Query(max_length=100)
-    prod_price: float = Field(index=True)
-    prod_stock: int = Field(0, gt=0)
-    # prod_size: list
-    # prod_color: list
-    prod_cat: str = Field(index=True)
-    # prod_imgs: list
-    prod_active: bool = Field(index=True)
-    prod_barcode: str 
-    prod_section: str 
-    prod_dtval: str 
-    prod_createdat: str
-    prod_lastupdate: str
-    
-class Order(SQLModel, table=True):
-    order_id: int = Field(primary_key=True, index=True)
-    order_cli: int = Field(index=True)
-    order_period: str = Field(index=True)
-    order_status: str = Field(index=True)
-    order_total: float
-    order_typepay: str
-    order_address: str = Query(max_length=100)
-    order_section: str = Field(index=True)
-    # order_prods: list
-    order_createdat: str
-
 
 
 ################################### AUTH
@@ -96,9 +29,33 @@ def auth_login(user: Annotated[User, Query()]):
     ...
 
 # Registro de novo usuário.
-@app.post("/auth/register") # POST
-def auth_register(user: Annotated[User, Query()]):
-    ...
+@app.post("/auth/register", response_model=User) # POST
+def auth_register(
+    session: SessionDep,
+    data: UserCreate
+) -> User:
+    email_exists = session.exec(select(User).where(User.usr_email == data.usr_email)).first()
+    
+    if email_exists:
+        raise HTTPException(status_code=401, detail="Já existe um usuário cadastrado com este email.")
+    
+    validEmail = re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', data.usr_email)
+    
+    if not validEmail:
+        raise HTTPException(status_code=401, detail="Por favor, digite um email válido.")
+    
+    new_user = User(
+        **data.dict(),
+        usr_active=True,
+        usr_createdat=datetime.utcnow(),
+        usr_lastupdate=datetime.utcnow()
+    )
+    
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+    
+    return new_user  
 
 #  Refresh de token JWT.    
 @app.post("/auth/refresh-token") # POST
@@ -114,7 +71,7 @@ def clients_get(
     session: SessionDep, 
     num_page: int = 1, 
     offset: int = 0, 
-    limit: Annotated[int, Query(le=10)] = 10
+    limit: Annotated[int, Query(le=10)] = 10,
 ) -> list[Client]:
     clients = session.exec(select(Client).offset(offset).limit(limit)).all()
     return clients
@@ -122,7 +79,14 @@ def clients_get(
 
 # Criar um novo cliente, validando email e CPF únicos.    
 @app.post("/clients") # POST
-def clients_post(client: Annotated[Client, Query()]):
+def clients_post(
+    client: Annotated[Client, Query()],
+    cli_name: str,
+    cli_email: str,
+    cli_cpf: str,
+    cli_phone: str,
+    cli_address: str
+):
     ...
 
 # Obter informações de um cliente específico.    
@@ -164,7 +128,20 @@ def products_get(
     
 # Criar um novo produto, contendo os seguintes atributos: descrição, valor de venda, código de barras, seção, estoque inicial, e data de validade (quando aplicável) e imagens.    
 @app.post("/products") # POST
-def products_post(product: Annotated[Product, Query()]):
+def products_post(
+    product: Annotated[Product, Query()],
+    prod_name: str,
+    prod_desc: str,
+    prod_price: float,
+    prod_cat: str,
+    prod_barcode: str,
+    prod_section: str,
+    prod_dtval: str,
+    prod_stock: int = 0
+    # prod_size: list,
+    # prod_color: list,
+    # prod_imgs: list,
+):
     ...
 
 # Obter informações de um produto específico.    
@@ -194,13 +171,28 @@ def products_delete(id: int, session: SessionDep):
 
 # Listar todos os pedidos, incluindo os seguintes filtros: período, seção dos produtos, id_pedido, status do pedido e cliente.
 @app.get("/orders") # GET
-def orders_get(order: Annotated[Order, Query()], session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Order]:
+def orders_get(
+    order: Annotated[Order, Query()], 
+    session: SessionDep, 
+    offset: int = 0, 
+    limit: Annotated[int, Query(le=10)] = 10
+) -> list[Order]:
     orders = session.exec(select(Order).offset(offset).limit(limit)).all()
     return orders
 
 # Criar um novo pedido contendo múltiplos produtos, validando estoque disponível.    
 @app.post("/orders") # POST
-def orders_post(order: Annotated[Order, Query()]):
+def orders_post(
+    order: Annotated[Order, Query()],
+    order_cli: int,
+    order_period: str,
+    order_total: float,
+    order_typepay: str,
+    order_address: str,
+    order_section: str,
+    # order_prods: list,
+    order_status: str = 'Concluído',
+):
     ...
 
 # Obter informações de um pedido específico.    
