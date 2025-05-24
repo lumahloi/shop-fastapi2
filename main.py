@@ -8,10 +8,14 @@ app = FastAPI()
 
 ################################### database
 
-postgresql_file_name = "shop-fastapi.db"
-postgresql_url = f"postgresql:///{postgresql_file_name}"
-connect_args = {"check_same_thread": False}
-engine = create_engine(postgresql_url, connect_args=connect_args)
+postgresql_file_name = "shop-fastapi"
+port = 5432
+host = 'localhost'
+user = 'postgres'
+password = 1234567890
+
+postgresql_url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{postgresql_file_name}"
+engine = create_engine(postgresql_url)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
