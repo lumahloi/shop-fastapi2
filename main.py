@@ -61,7 +61,7 @@ def auth_refresh_token():
 
 # Listar todos os clientes, com suporte a paginação e filtro por nome e email.    
 @app.get("/clients") # GET
-def clients_get(client: Client, num_page: Union[int, None]):
+def clients_get(client: Client, num_page: Union[int, 1]):
     ...
 
 # Criar um novo cliente, validando email e CPF únicos.    
@@ -88,7 +88,7 @@ def clients_delete():
 
 # Listar todos os produtos, com suporte a paginação e filtros por categoria, preço e disponibilidade.
 @app.get("/products") # GET
-def products_get(product: Product, num_page: Union[int, None]):
+def products_get(product: Product, num_page: Union[int, 1]):
     ...
     
 # Criar um novo produto, contendo os seguintes atributos: descrição, valor de venda, código de barras, seção, estoque inicial, e data de validade (quando aplicável) e imagens.    
