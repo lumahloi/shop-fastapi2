@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query, HTTPException
 from sqlmodel import select
-from typing import  Annotated
+from typing import  Annotated, Union
 from datetime import datetime
 import re
 
@@ -65,17 +65,26 @@ def auth_refresh_token():
 ################################### CLIENTS
 
 # Listar todos os clientes, com suporte a paginação e filtro por nome e email.    
-@app.get("/clients") # GET
+@app.get("/clients", response_model=list[Client]) # GET
 def clients_get(
-    client: Annotated[Client, Query()], 
     session: SessionDep, 
+    name: Union[str | None] = Query(None, alias="name"),
+    email: Union[str | None] = Query(None, alias="email"),
     num_page: int = 1, 
-    offset: int = 0, 
     limit: Annotated[int, Query(le=10)] = 10,
-) -> list[Client]:
-    clients = session.exec(select(Client).offset(offset).limit(limit)).all()
-    return clients
-    ...
+):
+    offset = (num_page - 1) * limit
+    
+    query = select(Client)
+
+    if name:
+        query = query.where(Client.name.ilike(f"%{name}%"))
+    if email:
+        query = query.where(Client.email.ilike(f"%{email}%"))
+
+    results = session.exec(query.offset(offset).limit(limit)).all()
+    
+    return results
 
 # Criar um novo cliente, validando email e CPF únicos.    
 @app.post("/clients") # POST
