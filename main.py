@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field
 from typing import Union, Annotated
-from fastapi import FastAPI, Query, Depends
-from sqlmodel import SQLModel, create_engine, Session
+from fastapi import FastAPI, Query, Depends, HTTPException
+from sqlmodel import SQLModel, create_engine, Session, select, Field
+from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -34,18 +34,18 @@ def on_startup():
 
 ################################### baseModels
 
-class User(BaseModel, SQLModel, table=True):
+class User(SQLModel, table=True):
     usr_id: int = Field(primary_key=True)
     usr_email: str = Query(max_length=20)
     usr_pass: str = Query(max_length=20)
     
-class Client(BaseModel, SQLModel, table=True):
+class Client(SQLModel, table=True):
     cli_id: int = Field(default=None, primary_key=True)
     cli_name: Union[str, None] = Query(max_length=20), Field(index=True)
     cli_email: Union[str, None] = Query(max_length=20), Field(index=True)
     cli_cpf: Union[str, None] = Query(max_length=11), Field(index=True)
     
-class Product(BaseModel, SQLModel, table=True):
+class Product(SQLModel, table=True):
     prod_id: int = Field(default=None, primary_key=True)
     prod_cat: str | None  = Field(index=True)
     prod_price: float = Field(index=True)
@@ -58,7 +58,7 @@ class Product(BaseModel, SQLModel, table=True):
     prod_dtval: str | None 
     prod_imgs: str
     
-class Order(BaseModel, SQLModel, table=True):
+class Order(SQLModel, table=True):
     order_id: int = Field(default=None, primary_key=True, index=True)
     order_period: Union[str, None] = Field(index=True)
     order_section: Union[str, None] = Field(index=True)
@@ -142,26 +142,11 @@ def auth_refresh_token():
 ################################### CLIENTS
 
 # Listar todos os clientes, com suporte a paginação e filtro por nome e email.    
-@app.get("/clients", response_model=list[Client]) # GET
-def clients_get(
-    session: SessionDep, 
-    name: Union[str | None] = Query(None, alias="name"),
-    email: Union[str | None] = Query(None, alias="email"),
-    num_page: Union[int | None] = Query(1, alias="num_page"),
-    limit: Annotated[int, Query(le=10)] = 10,
-):
-    offset = (num_page - 1) * limit
-    
-    query = select(Client)
-
-    if name:
-        query = query.where(Client.cli_name.ilike(f"%{name}%"))
-    if email:
-        query = query.where(Client.cli_email.ilike(f"%{email}%"))
-
-    results = session.exec(query.offset(offset).limit(limit)).all()
-    
-    return results
+@app.get("/clients") # GET
+def clients_get(client: Annotated[Client, Query()], num_page: Union[int, 1], session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Client]:
+    clients = session.exec(select(Client).offset(offset).limit(limit)).all()
+    return clients
+    ...
 
 # Criar um novo cliente, validando email e CPF únicos.    
 @app.post("/clients", response_model=Client) # POST
@@ -196,12 +181,12 @@ def clients_post(
     return new_client  
 
 # Obter informações de um cliente específico.    
-@app.get("/clients/{id}", response_model=Client) # GET
-def clients_get(id: int, session: SessionDep):
+@app.get("/clients/{id}") # GET
+def clients_get(id: int, session: SessionDep) -> Client:
     client = session.get(Client, id)
     if not client:
         raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente")
-    return client
+    return Client
 
 # Atualizar informações de um cliente específico.
 @app.put("/clients/{id}", response_model=Client) # PUT
@@ -239,92 +224,23 @@ def clients_delete(id: int, session: SessionDep):
 ################################### PRODUCTS
 
 # Listar todos os produtos, com suporte a paginação e filtros por categoria, preço e disponibilidade.
-@app.get("/products", response_model=list[Product]) # GET
-def products_get(
-    session: SessionDep,
-    category: Union[str | None] = Query(None, alias="category"),
-    price: Union[float | None] = Query(None, alias="price"),
-    availability: Union[bool | None] = Query(None, alias="availability"),
-    num_page: int = 1,
-    limit: Annotated[int, Query(le=10)] = 10
-):
-    offset = (num_page - 1) * limit
+@app.get("/products") # GET
+def products_get(product: Annotated[Product, Query()], num_page: Union[int, 1], session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Product]:
+    products = session.exec(select(Product).offset(offset).limit(limit)).all()
+    return products
     
-    query = select(Product)
-
-    if category:
-        query = query.where(Product.prod_cat == category)
-    if price:
-        query = query.where(Product.prod_price == price)
-    if availability:
-        query = query.where(Product.prod_active == availability)
-
-    results = session.exec(query.offset(offset).limit(limit)).all()
-    
-    return results
-    
-@app.post("/products", response_model=Product)  # POST
-def products_post(
-    session: SessionDep,
-    data: ProductCreate
-):
-    if not all(size in VALID_SIZE_TYPES for size in data.prod_size):
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "msg": f"Tipo(s) de tamanho inválido(s): {data.prod_size}",
-                "tipos_validos": VALID_SIZE_TYPES
-            }
-        )
-
-    if not all(color in VALID_COLOR_TYPES for color in data.prod_color):
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "msg": f"Tipo(s) de cor inválida(s): {data.prod_color}",
-                "tipos_validos": VALID_COLOR_TYPES
-            }
-        )
-
-    if data.prod_cat not in VALID_CATEGORY_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "msg": f"Categoria inválida: '{data.prod_cat}'",
-                "tipos_validos": VALID_CATEGORY_TYPES
-            }
-        )
-
-    if data.prod_section not in VALID_SECTION_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "msg": f"Seção inválida: '{data.prod_section}'",
-                "tipos_validos": VALID_SECTION_TYPES
-            }
-        )
-
-    new_product = Product(
-        **data.dict(),
-        prod_active=True,
-        prod_createdat=datetime.utcnow(),
-        prod_lastupdate=datetime.utcnow()
-    )
-
-    session.add(new_product)
-    session.commit()
-    session.refresh(new_product)
-
-    return new_product
- 
+# Criar um novo produto, contendo os seguintes atributos: descrição, valor de venda, código de barras, seção, estoque inicial, e data de validade (quando aplicável) e imagens.    
+@app.post("/products") # POST
+def products_post(product: Annotated[Product, Query()]):
+    ...
 
 # Obter informações de um produto específico.    
-@app.get("/products/{id}", response_model=Product) # GET
+@app.get("/products/{id}") # GET
 def products_get(id: int, session: SessionDep) -> Product:
     product = session.get(Product, id)
     if not product:
         raise HTTPException(status_code=404, detail="Não foi possível encontrar este produto")
-    return product
+    return Product
 
 #  Atualizar informações de um produto específico.
 @app.put("/products/{id}", response_model=Product) # PUT
@@ -362,29 +278,10 @@ def products_delete(id: int, session: SessionDep):
 ################################### PEDIDOS
 
 # Listar todos os pedidos, incluindo os seguintes filtros: período, seção dos produtos, id_pedido, status do pedido e cliente.
-@app.get("/orders", response_model=list[Order]) # GET
-def orders_get( 
-    session: SessionDep,
-    period: Union[datetime | None] = Query(None, alias="period"),
-    id: Union[int | None] = Query(None, alias="id"),
-    status: Union[str | None] = Query(None, alias="status"),
-    client: Union[int | None] = Query(None, alias="client"),
-):
-    query = select(Order)
-
-    if period:
-        query = query.where(Order.period.ilike(f"%{period}%"))
-    if id:
-        query = query.where(Order.id.ilike(f"%{id}%"))
-    if status:
-        query = query.where(Order.status.ilike(f"%{status}%"))
-    if client:
-        query = query.where(Order.client.ilike(f"%{client}%"))
-
-    results = session.exec(query).all()
-    
-    return results
-    
+@app.get("/orders") # GET
+def orders_get(order: Annotated[Order, Query()], session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Order]:
+    orders = session.exec(select(Order).offset(offset).limit(limit)).all()
+    return orders
 
 # Criar um novo pedido contendo múltiplos produtos, validando estoque disponível.    
 @app.post("/orders", response_model=Order)
