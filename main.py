@@ -8,7 +8,7 @@ app = FastAPI()
 
 ################################### database
 
-postgresql_file_name = ".db"
+postgresql_file_name = "shop-fastapi.db"
 postgresql_url = f"postgresql:///{postgresql_file_name}"
 connect_args = {"check_same_thread": False}
 engine = create_engine(postgresql_url, connect_args=connect_args)
@@ -59,10 +59,10 @@ class Product(SQLModel, table=True):
     prod_desc: str = Query(max_length=100)
     prod_price: float = Field(index=True)
     prod_stock: int = Field(0, gt=0)
-    prod_size: list
-    prod_color: list
+    # prod_size: list
+    # prod_color: list
     prod_cat: str = Field(index=True)
-    prod_imgs: list
+    # prod_imgs: list
     prod_active: bool = Field(index=True)
     prod_barcode: str 
     prod_section: str 
@@ -79,7 +79,7 @@ class Order(SQLModel, table=True):
     order_typepay: str
     order_address: str = Query(max_length=100)
     order_section: str = Field(index=True)
-    order_prods: list
+    # order_prods: list
     order_createdat: str
 
 
@@ -105,7 +105,7 @@ def auth_refresh_token():
 
 # Listar todos os clientes, com suporte a paginação e filtro por nome e email.    
 @app.get("/clients") # GET
-def clients_get(client: Annotated[Client, Query()], num_page: Union[int, 1], session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Client]:
+def clients_get(client: Annotated[Client, Query()], num_page: int | 1, session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Client]:
     clients = session.exec(select(Client).offset(offset).limit(limit)).all()
     return clients
     ...
@@ -142,7 +142,7 @@ def clients_delete(id: int, session: SessionDep):
 
 # Listar todos os produtos, com suporte a paginação e filtros por categoria, preço e disponibilidade.
 @app.get("/products") # GET
-def products_get(product: Annotated[Product, Query()], num_page: Union[int, 1], session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Product]:
+def products_get(product: Annotated[Product, Query()], num_page: int | 1, session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Product]:
     products = session.exec(select(Product).offset(offset).limit(limit)).all()
     return products
     
