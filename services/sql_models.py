@@ -68,17 +68,18 @@ class ProductCreate(ProductBase):
     pass
 
 class ProductUpdate(SQLModel):
-    prod_name: str | None = Field(default=None, min_length=3, max_length=50, index=True)
+    prod_name: str | None = Field(default=None, min_length=3, max_length=50)
     prod_desc: str | None = Field(default=None, max_length=100)
-    prod_price: float | None = Field(default=None, index=True)
+    prod_price: float | None = Field(default=None)
     prod_stock: int | None = Field(default=None, gt=0)
     prod_size: List[SizeType] | None = Field(default=None, sa_column=Column(JSON))
     prod_color: List[ColorType] | None = Field(default=None, sa_column=Column(JSON))
     prod_imgs: List[str] | None = Field(default=None, sa_column=Column(JSON))
     prod_cat: CategoryType | None = None
     prod_barcode: str | None = Field(default=None, min_length=43, max_length=43)
-    prod_section: str | None = Field(default=None, min_length=7, index=True)
+    prod_section: str | None = Field(default=None, min_length=7)
     prod_dtval: datetime | None = None
+
 
 class Product(ProductBase, table=True):
     prod_id: int = Field(default= None, primary_key=True)
