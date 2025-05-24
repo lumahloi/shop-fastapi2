@@ -105,7 +105,7 @@ def auth_refresh_token():
 
 # Listar todos os clientes, com suporte a paginação e filtro por nome e email.    
 @app.get("/clients") # GET
-def clients_get(client: Annotated[Client, Query()], num_page: int | 1, session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Client]:
+def clients_get(client: Annotated[Client, Query()], num_page: int = 1, session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Client]:
     clients = session.exec(select(Client).offset(offset).limit(limit)).all()
     return clients
     ...
@@ -142,7 +142,7 @@ def clients_delete(id: int, session: SessionDep):
 
 # Listar todos os produtos, com suporte a paginação e filtros por categoria, preço e disponibilidade.
 @app.get("/products") # GET
-def products_get(product: Annotated[Product, Query()], num_page: int | 1, session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Product]:
+def products_get(product: Annotated[Product, Query()], num_page: int = 1, session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=10)] = 10) -> list[Product]:
     products = session.exec(select(Product).offset(offset).limit(limit)).all()
     return products
     
