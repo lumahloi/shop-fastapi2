@@ -7,7 +7,7 @@ import re
 from services.database import create_db_and_tables
 from services.sql_models import User, Client, Product, Order
 from services.sql_models import UserCreate, ClientCreate, ProductCreate, OrderCreate
-from services.sql_models import ClientUpdate, ProductUpdate
+from services.sql_models import ClientUpdate, ProductUpdate, UserUpdate
 from services.sql_models import StatusType
 from services.session import SessionDep
 
@@ -35,7 +35,7 @@ def auth_login(user: Annotated[User, Query()]):
 def auth_register(
     session: SessionDep,
     data: UserCreate
-) -> User:
+):
     email_exists = session.exec(select(User).where(User.usr_email == data.usr_email)).first()
     
     if email_exists:
@@ -52,7 +52,30 @@ def auth_register(
     session.commit()
     session.refresh(new_user)
     
-    return new_user  
+    return new_user
+
+# Mudar tipo do usuário
+@app.put("/auth/register/{id}", response_model=User) # PUT
+def change_user_type(
+    session: SessionDep,
+    data: UserUpdate,
+    id: int
+):
+    user = session.get(User, id)
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Não foi possível encontrar este usuário.")
+
+    user_new_type = data.dict(exclude_unset=True)
+    
+    for key, value in user_new_type.items():
+        setattr(user, key, value)
+            
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return user
 
 #  Refresh de token JWT.    
 @app.post("/auth/refresh-token") # POST

@@ -14,7 +14,7 @@ def setup_database():
 def test_register_user():
     response = client.post(
         "/auth/register",
-        json={"usr_email": "testuser@example.com", "usr_pass": "securepassword", "usr_name": "testuser"}
+        json={"usr_email": "testuser@example.com", "usr_pass": "securepassword", "usr_name": "testuser", "usr_type": "Estoquista"}
     )
     assert response.status_code == 200
     assert response.json()["usr_email"] == "testuser@example.com"
@@ -22,7 +22,7 @@ def test_register_user():
 def test_register_user_duplicate():
     response = client.post(
         "/auth/register",
-        json={"usr_email": "testuser@example.com", "usr_pass": "securepassword", "usr_name": "testuser"}
+        json={"usr_email": "testuser@example.com", "usr_pass": "securepassword", "usr_name": "testuser", "usr_type": "Estoquista"}
     )
     assert response.status_code == 401
     assert response.json()["detail"] == "Já existe um usuário cadastrado com este email."
@@ -176,3 +176,32 @@ def test_delete_order():
     response = client.delete("/orders/1")
     assert response.status_code == 200
     assert response.json()["ok"] is True
+
+def test_change_user_type():
+    # Cria um novo usuário
+    user_resp = client.post(
+        "/auth/register",
+        json={
+            "usr_name": "João Silva",
+            "usr_email": "joao.silva@example.com",
+            "usr_pass": "senha123",
+            "usr_type": "Estoquista"
+        }
+    )
+    assert user_resp.status_code == 200
+    user_data = user_resp.json()
+    user_id = user_data["usr_id"]
+
+    # Altera o tipo do usuário
+    update_resp = client.put(
+        f"/auth/register/{user_id}",
+        json={
+            "usr_type": "Administrador"
+        }
+    )
+    assert update_resp.status_code == 200
+    updated_user = update_resp.json()
+
+    # Verifica se o tipo foi alterado
+    assert updated_user["usr_type"] == "Administrador"
+    assert updated_user["usr_id"] == user_id
