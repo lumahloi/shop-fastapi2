@@ -11,6 +11,5 @@ engine = create_engine(postgresql_url)
 
 
 def create_db_and_tables():
-    SQLModel.metadata.drop_all(engine)
+    # SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
-#     SQLModel.metadata.create_all(engine)
