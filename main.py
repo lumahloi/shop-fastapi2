@@ -9,6 +9,7 @@ from services.sql_models import User, Client, Product, Order
 from services.sql_models import UserCreate, ClientCreate, ProductCreate, OrderCreate
 from services.sql_models import ClientUpdate, ProductUpdate, UserUpdate
 from services.sql_models import StatusType
+from services.types import VALID_USER_TYPES
 from services.session import SessionDep
 
 
@@ -36,6 +37,15 @@ def auth_register(
     session: SessionDep,
     data: UserCreate
 ):
+    if data.usr_type not in VALID_USER_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "msg": f"Tipo de usuário inválido: '{data.usr_type}'",
+                "tipos_validos": VALID_USER_TYPES
+            }
+        )
+
     email_exists = session.exec(select(User).where(User.usr_email == data.usr_email)).first()
     
     if email_exists:
