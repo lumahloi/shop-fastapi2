@@ -183,22 +183,23 @@ def products_get(
     return results
     
 # Criar um novo produto, contendo os seguintes atributos: descrição, valor de venda, código de barras, seção, estoque inicial, e data de validade (quando aplicável) e imagens.    
-@app.post("/products") # POST
+@app.post("/products", response_model=Product) # POST
 def products_post(
-    product: Annotated[Product, Query()],
-    prod_name: str,
-    prod_desc: str,
-    prod_price: float,
-    prod_cat: str,
-    prod_barcode: str,
-    prod_section: str,
-    prod_dtval: str,
-    prod_stock: int = 0
-    # prod_size: list,
-    # prod_color: list,
-    # prod_imgs: list,
+    session: SessionDep,
+    data: ProductCreate
 ):
-    ...
+    new_product = Product(
+        **data.dict(),
+        prod_active=True,
+        prod_createdat=datetime.utcnow(),
+        prod_lastupdate=datetime.utcnow()
+    )
+    
+    session.add(new_product)
+    session.commit()
+    session.refresh(new_product)
+    
+    return new_product  
 
 # Obter informações de um produto específico.    
 @app.get("/products/{id}") # GET
