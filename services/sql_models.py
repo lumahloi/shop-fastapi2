@@ -5,7 +5,7 @@ from pydantic import constr
 
 class UserBase(SQLModel):
     usr_name: str = Field(min_length=3, max_length=20, index=True)
-    usr_email: str = Field(min_length=10,max_length=25,index=True)
+    usr_email: str = Field(min_length=10,max_length=25,index=True, regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
     usr_pass: str = Field(min_length=8,max_length=20)
     usr_type: str = Field(min_length=5,default='Funcionário', max_length=20)
     
@@ -23,7 +23,7 @@ class User(UserBase, table=True):
     
 class ClientBase(SQLModel):
     cli_name: str = Field(min_length=3,max_length=20,index=True)
-    cli_email: str = Field(min_length=10,max_length=25,index=True)
+    cli_email: str = Field(min_length=10,max_length=25,index=True, regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
     cli_cpf: str = Field(min_length=11,max_length=14,index=True)
     cli_phone: str = Field(min_length=11,max_length=15)
     cli_address: str = Field(min_length=8,max_length=100)
