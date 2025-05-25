@@ -7,6 +7,7 @@ import re
 from services.database import create_db_and_tables
 from services.sql_models import User, Client, Product, Order
 from services.sql_models import UserCreate, ClientCreate, ProductCreate, OrderCreate
+from services.sql_models import ClientUpdate, ProductUpdate
 from services.session import SessionDep
 
 
@@ -38,11 +39,6 @@ def auth_register(
     
     if email_exists:
         raise HTTPException(status_code=401, detail="Já existe um usuário cadastrado com este email.")
-    
-    validEmail = re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', data.usr_email)
-    
-    if not validEmail:
-        raise HTTPException(status_code=401, detail="Por favor, digite um email válido.")
     
     new_user = User(
         **data.dict(),
@@ -119,17 +115,35 @@ def clients_post(
     return new_client  
 
 # Obter informações de um cliente específico.    
-@app.get("/clients/{id}") # GET
-def clients_get(id: int, session: SessionDep) -> Client:
+@app.get("/clients/{id}", response_model=Client) # GET
+def clients_get(id: int, session: SessionDep):
     client = session.get(Client, id)
     if not client:
         raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente")
-    return Client
+    return client
 
 # Atualizar informações de um cliente específico.
-@app.put("/clients/{id}") # PUT
-def clients_put():
-    ...
+@app.put("/clients/{id}", response_model=Client) # PUT
+def clients_put(
+    id: int,
+    data: ClientUpdate,
+    session: SessionDep
+):
+    client = session.get(Client, id)
+    
+    if not client:
+        raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente.")
+    
+    client_data = data.dict(exclude_unset=True)
+    
+    for key, value in client_data.items():
+        setattr(client, key, value)
+            
+    session.add(client)
+    session.commit()
+    session.refresh(client)
+
+    return client   
 
 # Excluir um cliente.    
 @app.delete("/clients/{id}") # DELETE
