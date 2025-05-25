@@ -9,7 +9,7 @@ from services.sql_models import User, Client, Product, Order
 from services.sql_models import UserCreate, ClientCreate, ProductCreate, OrderCreate
 from services.sql_models import ClientUpdate, ProductUpdate, UserUpdate
 from services.sql_models import StatusType
-from services.types import VALID_USER_TYPES
+from services.custom_types import VALID_USER_TYPES
 from services.session import SessionDep
 
 
@@ -100,7 +100,7 @@ def clients_get(
     session: SessionDep, 
     name: Union[str | None] = Query(None, alias="name"),
     email: Union[str | None] = Query(None, alias="email"),
-    num_page: int = 1, 
+    num_page: Union[int | None] = Query(1, alias="num_page"),
     limit: Annotated[int, Query(le=10)] = 10,
 ):
     offset = (num_page - 1) * limit
@@ -108,9 +108,9 @@ def clients_get(
     query = select(Client)
 
     if name:
-        query = query.where(Client.name.ilike(f"%{name}%"))
+        query = query.where(Client.cli_name.ilike(f"%{name}%"))
     if email:
-        query = query.where(Client.email.ilike(f"%{email}%"))
+        query = query.where(Client.cli_email.ilike(f"%{email}%"))
 
     results = session.exec(query.offset(offset).limit(limit)).all()
     
