@@ -210,9 +210,27 @@ def products_get(id: int, session: SessionDep) -> Product:
     return product
 
 #  Atualizar informações de um produto específico.
-@app.put("/products/{id}") # PUT
-def products_put():
-    ...
+@app.put("/products/{id}", response_model=Product) # PUT
+def products_put(
+    id: int,
+    data: ProductUpdate,
+    session: SessionDep
+):
+    product = session.get(Product, id)
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Não foi possível encontrar este produto.")
+    
+    client_data = data.dict(exclude_unset=True)
+    
+    for key, value in client_data.items():
+        setattr(product, key, value)
+            
+    session.add(product)
+    session.commit()
+    session.refresh(product)
+
+    return product
 
 # Excluir um produto.    
 @app.delete("/products/{id}") # DELETE
