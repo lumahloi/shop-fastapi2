@@ -8,6 +8,7 @@ from services.database import create_db_and_tables
 from services.sql_models import User, Client, Product, Order
 from services.sql_models import UserCreate, ClientCreate, ProductCreate, OrderCreate
 from services.sql_models import ClientUpdate, ProductUpdate
+from services.sql_models import StatusType
 from services.session import SessionDep
 
 
@@ -270,19 +271,46 @@ def orders_get(
     
 
 # Criar um novo pedido contendo múltiplos produtos, validando estoque disponível.    
-@app.post("/orders") # POST
+@app.post("/orders", response_model=Order)
 def orders_post(
-    order: Annotated[Order, Query()],
-    order_cli: int,
-    order_period: str,
-    order_total: float,
-    order_typepay: str,
-    order_address: str,
-    order_section: str,
-    # order_prods: list,
-    order_status: str = 'Concluído',
+    session: SessionDep,
+    data: OrderCreate
 ):
-    ...
+    # Verifica se o cliente existe
+    client = session.exec(select(Client).where(Client.cli_id == data.order_cli)).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado.")
+
+    # Verifica se todos os produtos existem e têm estoque
+    produtos = session.exec(select(Product).where(Product.prod_id.in_(data.order_prods))).all()
+    if len(produtos) != len(data.order_prods):
+        raise HTTPException(status_code=404, detail="Um ou mais produtos não foram encontrados.")
+    
+    for prod in produtos:
+        if prod.prod_stock < 1:
+            raise HTTPException(status_code=400, detail=f"Produto '{prod.prod_name}' está sem estoque.")
+    
+    # Diminui o estoque de cada produto
+    for prod in produtos:
+        prod.prod_stock -= 1
+        session.add(prod)
+
+    # Cria o pedido
+    new_order = Order(
+        **data.dict(),
+        order_createdat=datetime.utcnow(),
+        order_period=datetime.utcnow().strftime("%Y-%m"),
+        order_status=StatusType.andamento  # ou outro status padrão
+    )
+
+    session.add(new_order)
+    session.commit()
+    session.refresh(new_order)
+
+    return new_order
+ 
+    
+    
 
 # Obter informações de um pedido específico.    
 @app.get("/orders/{id}") # GET
