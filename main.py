@@ -202,12 +202,12 @@ def products_post(
     return new_product  
 
 # Obter informações de um produto específico.    
-@app.get("/products/{id}") # GET
+@app.get("/products/{id}", response_model=Product) # GET
 def products_get(id: int, session: SessionDep) -> Product:
     product = session.get(Product, id)
     if not product:
         raise HTTPException(status_code=404, detail="Não foi possível encontrar este produto")
-    return Product
+    return product
 
 #  Atualizar informações de um produto específico.
 @app.put("/products/{id}") # PUT
