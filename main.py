@@ -206,11 +206,11 @@ def products_get(
     query = select(Product)
 
     if category:
-        query = query.where(Product.category.ilike(f"%{category}%"))
+        query = query.where(Product.prod_category == category)
     if price:
-        query = query.where(Product.price.ilike(f"%{price}%"))
+        query = query.where(Product.prod_price == price)
     if availability:
-        query = query.where(Product.availability.ilike(f"%{availability}%"))
+        query = query.where(Product.prod_availability == availability)
 
     results = session.exec(query.offset(offset).limit(limit)).all()
     

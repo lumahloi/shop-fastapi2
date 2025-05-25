@@ -13,7 +13,7 @@ def setup_database():
 
 
 ####################################################################### USER
-# user post
+
 def test_register_user():
     response = client.post(
         "/auth/register",
@@ -31,7 +31,6 @@ def test_register_user_duplicate():
     assert response.status_code == 401
     assert response.json()["detail"] == "Já existe um usuário cadastrado com este email."
 
-# usr put type
 def test_change_user_type():
     user_resp = client.post(
         "/auth/register",
@@ -59,6 +58,7 @@ def test_change_user_type():
     assert updated_user["usr_id"] == user_id
 
 ####################################################################### CLIENT
+
 def test_create_client():
     response = client.post(
         "/clients",
@@ -73,14 +73,12 @@ def test_create_client():
     assert response.status_code == 200
     assert response.json()["cli_name"] == "João Silva"
 
-#get all clients
 def test_get_all_clients():
     response = client.get("/clients")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
     assert len(response.json()) > 0
 
-#get clients filter by name
 def test_get_clients_by_name():
     client.post(
         "/clients",
@@ -98,7 +96,6 @@ def test_get_clients_by_name():
     clients = response.json()
     assert any("João" in cli["cli_name"] for cli in clients)
 
-#get clients filter by email
 def test_get_clients_by_email():
     client.post(
         "/clients",
@@ -116,7 +113,6 @@ def test_get_clients_by_email():
     clients = response.json()
     assert any("ana.maria@example.com" == cli["cli_email"] for cli in clients)
 
-# get client filter by pagination
 def test_get_clients_pagination():
     response = client.get("/clients?num_page=1&limit=2")
     assert response.status_code == 200
@@ -143,6 +139,7 @@ def test_delete_client():
 
 
 ####################################################################### PRODUCT
+
 def test_create_product():
     response = client.post(
         "/products",
@@ -190,6 +187,7 @@ def test_delete_product():
 
 
 ####################################################################### ORDER
+
 def test_create_order():
     # Cria cliente
     client_resp = client.post(
@@ -253,4 +251,3 @@ def test_delete_order():
     response = client.delete("/orders/1")
     assert response.status_code == 200
     assert response.json()["ok"] is True
-
