@@ -1,0 +1,45 @@
+POST http://127.0.0.1:8000/auth/register
+
+{
+  "usr_name": "lumah",
+  "usr_email": "lumah@gmail.com",
+  "usr_pass": "1234567890",
+  "usr_type": "Administrador"
+}
+
+####
+
+GET http://127.0.0.1:8000/clients
+
+####
+
+POST http://127.0.0.1:8000/clients
+
+{
+  "cli_name": "Davi",
+  "cli_email": "davi@gmail.com",
+  "cli_cpf": "123.456.789-01",
+  "cli_phone": "(12) 34567-8901",
+  "cli_address": "Rua das Palmeiras 63 Bloco 4 Apartamento 49"
+}
+
+####
+
+GET http://127.0.0.1:8000/clients/1
+
+####
+
+PUT http://127.0.0.1:8000/clients/1
+
+{
+  "cli_name": "Lumah",
+  "cli_email": "Lumah@gmail.com",
+  "cli_phone": "00000000000",
+  "cli_address": "Rua das Palmeiras 65 Bloco 4 Apartamento 49"
+}
+
+####
+
+DELETE http://127.0.0.1:8000/clients/1
+
+####
