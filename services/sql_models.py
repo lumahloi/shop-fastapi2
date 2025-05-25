@@ -1,6 +1,5 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
-from pydantic import constr
 
 
 class UserBase(SQLModel):
@@ -31,6 +30,12 @@ class ClientBase(SQLModel):
 class ClientCreate(ClientBase):
     pass
 
+class ClientUpdate(SQLModel):
+    cli_name: str | None = None, Field(min_length=3,max_length=20)
+    cli_email: str | None = None, Field(min_length=10,max_length=25,index=True, regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    cli_address: str | None = None, Field(min_length=8,max_length=100)
+    cli_phone: str | None = None, Field(min_length=11,max_length=15)
+
 class Client(ClientBase, table=True):
     cli_id: int = Field(default= None, primary_key=True)
     cli_createdat: datetime = Field(default_factory=datetime.utcnow)
@@ -53,6 +58,19 @@ class ProductBase(SQLModel):
     
 class ProductCreate(ProductBase):
     pass
+
+class ProductUpdate(SQLModel):
+    prod_name: str | None = None, Field(min_length=3,max_length=50,index=True)
+    prod_desc: str | None = None, Field(max_length=100)
+    prod_price: float | None = None, Field(index=True)
+    prod_stock: int | None = None, Field(default=0, gt=0)
+    # prod_size: list
+    # prod_color: list
+    prod_cat: str | None = None, Field(min_length=7,index=True)
+    # prod_imgs: list
+    prod_barcode: str | None = None, Field(min_length=43,max_length=43)
+    prod_section: str | None = None, Field(min_length=7,index=True)
+    prod_dtval: datetime | None = None
 
 class Product(ProductBase, table=True):
     prod_id: int = Field(default= None, primary_key=True)
