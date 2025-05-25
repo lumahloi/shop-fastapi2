@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, Field, JSON
 from sqlalchemy import Column
 from datetime import datetime
 from typing import List
-from types import UserType, SizeType, ColorType, CategoryType, SectionType, StatusType, PaymentType
+from .custom_types import UserType, SizeType, ColorType, CategoryType, SectionType, StatusType, PaymentType
 
 
 

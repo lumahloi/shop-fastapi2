@@ -2,16 +2,17 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 
-from services.types import VALID_USER_TYPES
+from services.custom_types import VALID_USER_TYPES
 
 client = TestClient(app)
 
-# Configurações para rodar antes dos testes
 @pytest.fixture(autouse=True, scope="module")
 def setup_database():
     from services.database import create_db_and_tables
     create_db_and_tables()
 
+
+####################################################################### USER
 # user post
 def test_register_user():
     response = client.post(
@@ -57,7 +58,7 @@ def test_change_user_type():
     assert updated_user["usr_type"] == "Administrador"
     assert updated_user["usr_id"] == user_id
 
-
+####################################################################### CLIENT
 def test_create_client():
     response = client.post(
         "/clients",
@@ -72,10 +73,56 @@ def test_create_client():
     assert response.status_code == 200
     assert response.json()["cli_name"] == "João Silva"
 
-def test_get_clients():
+#get all clients
+def test_get_all_clients():
     response = client.get("/clients")
     assert response.status_code == 200
+    assert isinstance(response.json(), list)
     assert len(response.json()) > 0
+
+#get clients filter by name
+def test_get_clients_by_name():
+    client.post(
+        "/clients",
+        json={
+            "cli_name": "João da Silva",
+            "cli_email": "joao.silva@example.com",
+            "cli_cpf": "12345678901",
+            "cli_phone": "11999999999",
+            "cli_address": "Rua A, 123"
+        }
+    )
+
+    response = client.get("/clients?name=João")
+    assert response.status_code == 200
+    clients = response.json()
+    assert any("João" in cli["cli_name"] for cli in clients)
+
+#get clients filter by email
+def test_get_clients_by_email():
+    client.post(
+        "/clients",
+        json={
+            "cli_name": "Ana Maria",
+            "cli_email": "ana.maria@example.com",
+            "cli_cpf": "12312312399",
+            "cli_phone": "11988888888",
+            "cli_address": "Rua B, 456"
+        }
+    )
+
+    response = client.get("/clients?email=ana.maria@example.com")
+    assert response.status_code == 200
+    clients = response.json()
+    assert any("ana.maria@example.com" == cli["cli_email"] for cli in clients)
+
+# get client filter by pagination
+def test_get_clients_pagination():
+    response = client.get("/clients?num_page=1&limit=2")
+    assert response.status_code == 200
+    clients = response.json()
+    assert isinstance(clients, list)
+    assert len(clients) > 0
 
 def test_get_client_by_id():
     response = client.get("/clients/1")
@@ -94,6 +141,8 @@ def test_delete_client():
     assert response.status_code == 200
     assert response.json()["ok"] is True
 
+
+####################################################################### PRODUCT
 def test_create_product():
     response = client.post(
         "/products",
@@ -139,6 +188,8 @@ def test_delete_product():
     assert response.status_code == 200
     assert response.json()["ok"] is True
 
+
+####################################################################### ORDER
 def test_create_order():
     # Cria cliente
     client_resp = client.post(
@@ -187,7 +238,6 @@ def test_create_order():
         }
     )
     assert response.status_code == 200
-
 
 def test_get_orders():
     response = client.get("/orders")
