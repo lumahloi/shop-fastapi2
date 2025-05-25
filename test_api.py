@@ -162,10 +162,87 @@ def test_create_product():
     assert data["prod_name"] == "Camisa Polo"
     assert data["prod_stock"] == 10
 
-def test_get_products():
+def test_get_all_products():
     response = client.get("/products")
     assert response.status_code == 200
+    assert isinstance(response.json(), list)
     assert len(response.json()) > 0
+
+def test_get_products_by_category():
+    client.post(
+        "/products",
+        json={
+            "prod_size": ["PP", "P"],
+            "prod_color": ["laranja", "vermelho"],
+            "prod_imgs": [],
+            "prod_name": "Camisa Polo",
+            "prod_desc": "Camisa confortável para o dia a dia.",
+            "prod_price": 99.90,
+            "prod_stock": 10,
+            "prod_cat": "Masculino",
+            "prod_barcode": "1234567890123456789012345678901234567890123",
+            "prod_section": "Blusas",
+            "prod_dtval": None
+        }
+    )
+
+    response = client.get("/products?category=Masculino")
+    assert response.status_code == 200
+    products = response.json()
+    assert any("Masculino" in product["prod_cat"] for product in products) 
+
+def test_get_products_by_price():
+    client.post(
+        "/products",
+        json={
+            "prod_size": ["PP", "P"],
+            "prod_color": ["laranja", "vermelho"],
+            "prod_imgs": [],
+            "prod_name": "Camisa Polo",
+            "prod_desc": "Camisa confortável para o dia a dia.",
+            "prod_price": 99.90,
+            "prod_stock": 10,
+            "prod_cat": "Masculino",
+            "prod_barcode": "1234567890123456789012345678901234567890123",
+            "prod_section": "Blusas",
+            "prod_dtval": None
+        }
+    )
+
+    response = client.get("/products?price=99.90")
+    assert response.status_code == 200
+    products = response.json()
+    assert any(product["prod_price"] == 99.90 for product in products)
+
+def test_get_products_by_availability():
+    client.post(
+        "/products",
+        json={
+            "prod_size": ["PP", "P"],
+            "prod_color": ["laranja", "vermelho"],
+            "prod_imgs": [],
+            "prod_name": "Camisa Polo",
+            "prod_desc": "Camisa confortável para o dia a dia.",
+            "prod_price": 99.90,
+            "prod_stock": 10,
+            "prod_cat": "Masculino",
+            "prod_barcode": "1234567890123456789012345678901234567890123",
+            "prod_section": "Blusas",
+            "prod_dtval": None
+        }
+    )
+
+    response = client.get("/products?availability=True")
+    assert response.status_code == 200
+    products = response.json()
+    assert any(product["prod_active"] == True for product in products)
+
+def test_get_products_pagination():
+    response = client.get("/products?num_page=1&limit=2")
+    assert response.status_code == 200
+    products = response.json()
+    assert isinstance(products, list)
+    assert len(products) > 0
 
 def test_get_product_by_id():
     response = client.get("/products/1")
