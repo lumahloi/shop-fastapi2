@@ -9,7 +9,7 @@ from services.sql_models import User, Client, Product, Order
 from services.sql_models import UserCreate, ClientCreate, ProductCreate, OrderCreate
 from services.sql_models import ClientUpdate, ProductUpdate, UserUpdate
 from services.sql_models import StatusType
-from services.custom_types import VALID_USER_TYPES
+from services.custom_types import VALID_USER_TYPES, VALID_SIZE_TYPES, VALID_COLOR_TYPES, VALID_CATEGORY_TYPES, VALID_SECTION_TYPES, VALID_STATUS_TYPES, VALID_PAYMENT_TYPES
 from services.session import SessionDep
 
 
@@ -216,24 +216,60 @@ def products_get(
     
     return results
     
-# Criar um novo produto, contendo os seguintes atributos: descrição, valor de venda, código de barras, seção, estoque inicial, e data de validade (quando aplicável) e imagens.    
-@app.post("/products", response_model=Product) # POST
+@app.post("/products", response_model=Product)  # POST
 def products_post(
     session: SessionDep,
     data: ProductCreate
 ):
+    if not all(size in VALID_SIZE_TYPES for size in data.prod_size):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "msg": f"Tipo(s) de tamanho inválido(s): {data.prod_size}",
+                "tipos_validos": VALID_SIZE_TYPES
+            }
+        )
+
+    if not all(color in VALID_COLOR_TYPES for color in data.prod_color):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "msg": f"Tipo(s) de cor inválida(s): {data.prod_color}",
+                "tipos_validos": VALID_COLOR_TYPES
+            }
+        )
+
+    if data.prod_cat not in VALID_CATEGORY_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "msg": f"Categoria inválida: '{data.prod_cat}'",
+                "tipos_validos": VALID_CATEGORY_TYPES
+            }
+        )
+
+    if data.prod_section not in VALID_SECTION_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "msg": f"Seção inválida: '{data.prod_section}'",
+                "tipos_validos": VALID_SECTION_TYPES
+            }
+        )
+
     new_product = Product(
         **data.dict(),
         prod_active=True,
         prod_createdat=datetime.utcnow(),
         prod_lastupdate=datetime.utcnow()
     )
-    
+
     session.add(new_product)
     session.commit()
     session.refresh(new_product)
-    
-    return new_product  
+
+    return new_product
+ 
 
 # Obter informações de um produto específico.    
 @app.get("/products/{id}", response_model=Product) # GET

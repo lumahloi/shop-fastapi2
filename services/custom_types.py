@@ -17,12 +17,39 @@ class UserType(str, Enum):
     estoquista = "Estoquista"
     atendente = "Atendente"
 
+VALID_SIZE_TYPES = [
+    "PP",
+    "P",
+    "M",
+    "G",
+    "GG",
+]
+
 class SizeType(str, Enum):
     tam_pp = "PP"
     tam_P = "P"
     tam_M = "M"
     tam_G = "G"
     tam_GG = "GG"
+
+VALID_COLOR_TYPES = [
+    "amarelo",
+    "azul",
+    "bege",
+    "branco",
+    "bronze",
+    "ciano",
+    "cinza",
+    "laranja",
+    "lilás",
+    "marrom",
+    "preto",
+    "rosa",
+    "roxo",
+    "verde",
+    "vermelho",
+]
+
     
 class ColorType(str, Enum):
     color_amarelo = "amarelo"
@@ -40,12 +67,28 @@ class ColorType(str, Enum):
     color_roxo = "roxo"
     color_verde = "verde"
     color_vermelho = "vermelho"
+
+VALID_CATEGORY_TYPES = [
+    "Masculino",
+    "Feminino",
+    "Menina",
+    "Menino",
+]
     
 class CategoryType(str, Enum):
     masc = "Masculino"
     fem = "Feminino"
     k_fem = "Menina"
     k_masc = "Menino"
+
+VALID_SECTION_TYPES = [
+    "Blusas",
+    "Calças",
+    "Vestidos",
+    "Blusas",
+    "Shorts",
+    "Blusas"
+]
     
 class SectionType(str, Enum):
     Blusas = "Blusas"
@@ -54,6 +97,17 @@ class SectionType(str, Enum):
     Calçados = "Blusas"
     Shorts = "Shorts"
     Acessórios = "Blusas"
+
+VALID_STATUS_TYPES = [
+    "Em andamento",
+    "Pagamento confirmado",
+    "Preparando para a entrega",
+    "Enviado para a entrega",
+    "Entregue",
+    "A caminho",
+    "Cancelado",
+    "Solicitado reembolso",
+]
 
 class StatusType(str, Enum):
     andamento = "Em andamento"
@@ -64,6 +118,13 @@ class StatusType(str, Enum):
     acaminho = "A caminho"
     cancelado = "Cancelado"
     reembolso = "Solicitado reembolso"
+
+VALID_PAYMENT_TYPES = [
+    "Crédito",
+    "Débito",
+    "Pix",
+    "Boleto",
+]
     
 class PaymentType(str, Enum):
     credito = "Crédito"

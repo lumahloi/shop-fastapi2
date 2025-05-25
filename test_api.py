@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 
-from services.custom_types import VALID_USER_TYPES
+from services.custom_types import VALID_USER_TYPES, VALID_SIZE_TYPES, VALID_COLOR_TYPES, VALID_CATEGORY_TYPES, VALID_SECTION_TYPES, VALID_STATUS_TYPES, VALID_PAYMENT_TYPES
 
 client = TestClient(app)
 
@@ -161,6 +161,10 @@ def test_create_product():
     data = response.json()
     assert data["prod_name"] == "Camisa Polo"
     assert data["prod_stock"] == 10
+    assert all(size in VALID_SIZE_TYPES for size in data["prod_size"])
+    assert all(color in VALID_COLOR_TYPES for color in data["prod_color"])
+    assert data["prod_cat"] in VALID_CATEGORY_TYPES
+    assert data["prod_section"] in VALID_SECTION_TYPES
 
 def test_get_all_products():
     response = client.get("/products")
