@@ -245,15 +245,29 @@ def products_delete(id: int, session: SessionDep):
 ################################### PEDIDOS
 
 # Listar todos os pedidos, incluindo os seguintes filtros: período, seção dos produtos, id_pedido, status do pedido e cliente.
-@app.get("/orders") # GET
-def orders_get(
-    order: Annotated[Order, Query()], 
-    session: SessionDep, 
-    offset: int = 0, 
-    limit: Annotated[int, Query(le=10)] = 10
-) -> list[Order]:
-    orders = session.exec(select(Order).offset(offset).limit(limit)).all()
-    return orders
+@app.get("/orders", response_model=list[Order]) # GET
+def orders_get( 
+    session: SessionDep,
+    period: Union[datetime | None] = Query(None, alias="period"),
+    id: Union[int | None] = Query(None, alias="id"),
+    status: Union[str | None] = Query(None, alias="status"),
+    client: Union[int | None] = Query(None, alias="client"),
+):
+    query = select(Order)
+
+    if period:
+        query = query.where(Order.period.ilike(f"%{period}%"))
+    if id:
+        query = query.where(Order.id.ilike(f"%{id}%"))
+    if status:
+        query = query.where(Order.status.ilike(f"%{status}%"))
+    if client:
+        query = query.where(Order.client.ilike(f"%{client}%"))
+
+    results = session.exec(query).all()
+    
+    return results
+    
 
 # Criar um novo pedido contendo múltiplos produtos, validando estoque disponível.    
 @app.post("/orders") # POST
