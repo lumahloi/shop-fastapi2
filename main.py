@@ -87,16 +87,36 @@ def clients_get(
     return results
 
 # Criar um novo cliente, validando email e CPF únicos.    
-@app.post("/clients") # POST
+@app.post("/clients", response_model=Client) # POST
 def clients_post(
-    client: Annotated[Client, Query()],
-    cli_name: str,
-    cli_email: str,
-    cli_cpf: str,
-    cli_phone: str,
-    cli_address: str
-):
-    ...
+    session: SessionDep,
+    data: ClientCreate
+) -> Client:
+    email_exists = session.exec(select(Client).where(Client.cli_email == data.cli_email)).first()
+
+    if email_exists:
+        raise HTTPException(status_code=401, detail="Já existe um cliente cadastrado com este email.")
+    
+    cpf_exists = session.exec(select(Client).where(Client.cli_cpf == data.cli_cpf)).first()
+
+    if cpf_exists:
+        raise HTTPException(status_code=401, detail="Já existe um cliente cadastrado com este CPF.")
+    
+    data.cli_phone = re.sub(r'\D', '', data.cli_phone)
+    
+    data.cli_cpf = re.sub(r'\D', '', data.cli_cpf)
+    
+    new_client = Client(
+        **data.dict(),
+        usr_active=True,
+        usr_createdat=datetime.utcnow()
+    )
+    
+    session.add(new_client)
+    session.commit()
+    session.refresh(new_client)
+    
+    return new_client  
 
 # Obter informações de um cliente específico.    
 @app.get("/clients/{id}") # GET
