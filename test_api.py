@@ -2,6 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 
+from services.types import VALID_USER_TYPES
+
 client = TestClient(app)
 
 # Configurações para rodar antes dos testes
@@ -10,7 +12,7 @@ def setup_database():
     from services.database import create_db_and_tables
     create_db_and_tables()
 
-# Testes de autenticação
+# user post
 def test_register_user():
     response = client.post(
         "/auth/register",
@@ -18,6 +20,7 @@ def test_register_user():
     )
     assert response.status_code == 200
     assert response.json()["usr_email"] == "testuser@example.com"
+    assert response.json()["usr_type"] in VALID_USER_TYPES
 
 def test_register_user_duplicate():
     response = client.post(
@@ -27,7 +30,34 @@ def test_register_user_duplicate():
     assert response.status_code == 401
     assert response.json()["detail"] == "Já existe um usuário cadastrado com este email."
 
-# # Testes para clientes
+# usr put type
+def test_change_user_type():
+    user_resp = client.post(
+        "/auth/register",
+        json={
+            "usr_name": "João Silva",
+            "usr_email": "joao.silva@example.com",
+            "usr_pass": "senha123",
+            "usr_type": "Estoquista"
+        }
+    )
+    assert user_resp.status_code == 200
+    user_data = user_resp.json()
+    user_id = user_data["usr_id"]
+
+    update_resp = client.put(
+        f"/auth/register/{user_id}",
+        json={
+            "usr_type": "Administrador"
+        }
+    )
+    assert update_resp.status_code == 200
+    updated_user = update_resp.json()
+
+    assert updated_user["usr_type"] == "Administrador"
+    assert updated_user["usr_id"] == user_id
+
+
 def test_create_client():
     response = client.post(
         "/clients",
@@ -64,7 +94,6 @@ def test_delete_client():
     assert response.status_code == 200
     assert response.json()["ok"] is True
 
-# Testes para produtos
 def test_create_product():
     response = client.post(
         "/products",
@@ -86,7 +115,6 @@ def test_create_product():
     data = response.json()
     assert data["prod_name"] == "Camisa Polo"
     assert data["prod_stock"] == 10
-
 
 def test_get_products():
     response = client.get("/products")
@@ -111,7 +139,6 @@ def test_delete_product():
     assert response.status_code == 200
     assert response.json()["ok"] is True
 
-# Testes para pedidos
 def test_create_order():
     # Cria cliente
     client_resp = client.post(
@@ -177,31 +204,3 @@ def test_delete_order():
     assert response.status_code == 200
     assert response.json()["ok"] is True
 
-def test_change_user_type():
-    # Cria um novo usuário
-    user_resp = client.post(
-        "/auth/register",
-        json={
-            "usr_name": "João Silva",
-            "usr_email": "joao.silva@example.com",
-            "usr_pass": "senha123",
-            "usr_type": "Estoquista"
-        }
-    )
-    assert user_resp.status_code == 200
-    user_data = user_resp.json()
-    user_id = user_data["usr_id"]
-
-    # Altera o tipo do usuário
-    update_resp = client.put(
-        f"/auth/register/{user_id}",
-        json={
-            "usr_type": "Administrador"
-        }
-    )
-    assert update_resp.status_code == 200
-    updated_user = update_resp.json()
-
-    # Verifica se o tipo foi alterado
-    assert updated_user["usr_type"] == "Administrador"
-    assert updated_user["usr_id"] == user_id
