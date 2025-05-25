@@ -158,16 +158,29 @@ def clients_delete(id: int, session: SessionDep):
 ################################### PRODUCTS
 
 # Listar todos os produtos, com suporte a paginação e filtros por categoria, preço e disponibilidade.
-@app.get("/products") # GET
+@app.get("/products", response_model=list[Product]) # GET
 def products_get(
-    product: Annotated[Product, Query()],
     session: SessionDep,
+    category: Union[str | None] = Query(None, alias="category"),
+    price: Union[float | None] = Query(None, alias="price"),
+    availability: Union[bool | None] = Query(None, alias="availability"),
     num_page: int = 1,
-    offset: int = 0,
     limit: Annotated[int, Query(le=10)] = 10
-) -> list[Product]:
-    products = session.exec(select(Product).offset(offset).limit(limit)).all()
-    return products
+):
+    offset = (num_page - 1) * limit
+    
+    query = select(Product)
+
+    if category:
+        query = query.where(Product.category.ilike(f"%{category}%"))
+    if price:
+        query = query.where(Product.price.ilike(f"%{price}%"))
+    if availability:
+        query = query.where(Product.availability.ilike(f"%{availability}%"))
+
+    results = session.exec(query.offset(offset).limit(limit)).all()
+    
+    return results
     
 # Criar um novo produto, contendo os seguintes atributos: descrição, valor de venda, código de barras, seção, estoque inicial, e data de validade (quando aplicável) e imagens.    
 @app.post("/products") # POST
