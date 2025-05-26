@@ -5,7 +5,7 @@ from datetime import datetime
 
 from ..models.model_product import Product, ProductCreate, ProductUpdate
 from ..utils.custom_types import VALID_SIZE_TYPES, VALID_COLOR_TYPES, VALID_CATEGORY_TYPES, VALID_SECTION_TYPES, CategoryType
-
+from ..utils.services import to_str_lower
 from ..utils.session import SessionDep
 
 router = APIRouter()
@@ -42,6 +42,10 @@ def products_get(
     
 @router.post("/products", response_model=Product)  # POST
 def products_post(session: SessionDep, data: ProductCreate):
+    data.prod_size = [s.lower() for s in data.prod_size]
+    data.prod_color = [c.lower() for c in data.prod_color]
+    data.prod_cat = to_str_lower(data.prod_cat)
+    data.prod_section = to_str_lower(data.prod_section)
     
     if not all(size in VALID_SIZE_TYPES for size in data.prod_size):
         raise HTTPException(

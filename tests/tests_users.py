@@ -1,13 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
 from datetime import datetime
-
 from app.main import app
 from app.models.model_user import User
 from app.utils.auth import get_password_hash, create_access_token
 from app.utils.custom_types import VALID_USER_TYPES
 from app.utils.session import SessionDep
-
 from app.utils.database import create_db_and_tables
 
 client = TestClient(app)
@@ -35,8 +33,8 @@ def test_register_user_duplicate_email(session: SessionDep, override_session, ne
         usr_email=new_user_data["usr_email"],
         usr_password=get_password_hash(new_user_data["usr_password"]),
         usr_type=new_user_data["usr_type"],
-        usr_createdat=datetime.utcnow(),
-        usr_lastupdate=datetime.utcnow(),
+        usr_createdat=datetime.utcnow().replace(tzinfo=None),
+        usr_lastupdate=datetime.utcnow().replace(tzinfo=None),
         usr_active=True
     ))
     session.commit()
@@ -51,8 +49,8 @@ def test_login_success(session: SessionDep, override_session, new_user_data):
         usr_email=new_user_data["usr_email"],
         usr_password=hashed_password,
         usr_type=new_user_data["usr_type"],
-        usr_createdat=datetime.utcnow(),
-        usr_lastupdate=datetime.utcnow(),
+        usr_createdat=datetime.utcnow().replace(tzinfo=None),
+        usr_lastupdate=datetime.utcnow().replace(tzinfo=None),
         usr_active=True
     ))
     session.commit()
@@ -87,8 +85,8 @@ def test_change_user_type_success(session: SessionDep, override_session, new_use
         usr_email=new_user_data["usr_email"],
         usr_password=get_password_hash(new_user_data["usr_password"]),
         usr_type=new_user_data["usr_type"],
-        usr_createdat=datetime.utcnow(),
-        usr_lastupdate=datetime.utcnow(),
+        usr_createdat=datetime.utcnow().replace(tzinfo=None),
+        usr_lastupdate=datetime.utcnow().replace(tzinfo=None),
         usr_active=True
     )
     session.add(user)

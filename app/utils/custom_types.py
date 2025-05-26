@@ -16,6 +16,15 @@ class UserType(str, Enum):
     marketing = "marketing"
     estoquista = "estoquista"
     atendente = "atendente"
+    
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            value = value.lower()
+            for member in cls:
+                if member.value == value:
+                    return member
+        return None
 
 VALID_SIZE_TYPES = [
     "pp",
@@ -31,6 +40,15 @@ class SizeType(str, Enum):
     tam_m = "m"
     tam_g = "g"
     tam_gg = "gg"
+    
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            value = value.lower()
+            for member in cls:
+                if member.value == value:
+                    return member
+        return None
 
 VALID_COLOR_TYPES = [
     "amarelo",
@@ -66,6 +84,15 @@ class ColorType(str, Enum):
     color_roxo = "roxo"
     color_verde = "verde"
     color_vermelho = "vermelho"
+    
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            value = value.lower()
+            for member in cls:
+                if member.value == value:
+                    return member
+        return None
 
 VALID_CATEGORY_TYPES = [
     "masculino",
@@ -79,23 +106,41 @@ class CategoryType(str, Enum):
     fem = "feminino"
     k_fem = "menina"
     k_masc = "menino"
+    
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            value = value.lower()
+            for member in cls:
+                if member.value == value:
+                    return member
+        return None
 
 VALID_SECTION_TYPES = [
     "blusas",
     "calças",
     "vestidos",
-    "blusas",
+    "calçados",
     "shorts",
-    "blusas"
+    "acessórios"
 ]
 
 class SectionType(str, Enum):
     blusas = "blusas"
     calças = "calças"
     vestidos = "vestidos"
-    calçados = "blusas"
+    calçados = "calçados"
     shorts = "shorts"
-    acessórios = "blusas"
+    acessórios = "acessórios"
+    
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            value = value.lower()
+            for member in cls:
+                if member.value == value:
+                    return member
+        return None
 
 VALID_STATUS_TYPES = [
     "em andamento",
@@ -117,6 +162,15 @@ class StatusType(str, Enum):
     acaminho = "a caminho"
     cancelado = "cancelado"
     reembolso = "solicitado reembolso"
+    
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            value = value.lower()
+            for member in cls:
+                if member.value == value:
+                    return member
+        return None
 
 VALID_PAYMENT_TYPES = [
     "crédito",
@@ -130,3 +184,12 @@ class PaymentType(str, Enum):
     debito = "débito"
     pix = "pix"
     boleto = "boleto"
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            value = value.lower()
+            for member in cls:
+                if member.value == value:
+                    return member
+        return None

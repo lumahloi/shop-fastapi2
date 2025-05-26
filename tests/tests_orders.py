@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from datetime import datetime, date
+from datetime import datetime
 
 from app.main import app
 from app.models.model_client import Client
