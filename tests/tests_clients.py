@@ -1,15 +1,10 @@
-import pytest, uuid, random
+import pytest, random
 from fastapi.testclient import TestClient
 from app.main import app
 from app.utils.database import create_db_and_tables
+from app.utils.services import unique_email, unique_cpf
 
 client = TestClient(app)
-
-def unique_email():
-    return f"{''.join([str(random.randint(0, 9)) for _ in range(11)])}@example.com"
-
-def unique_cpf():
-    return ''.join([str(random.randint(0, 9)) for _ in range(11)])
 
 @pytest.fixture(autouse=True)
 def setup_database():
