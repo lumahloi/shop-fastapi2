@@ -17,7 +17,7 @@ class OrderCreate(OrderBase):
     pass
 
 class OrderUpdate(SQLModel):
-    order_status: StatusType
+    order_status: str
 
 class Order(OrderBase, table=True):
     order_id: Optional[int] = Field(primary_key=True, index=True)
