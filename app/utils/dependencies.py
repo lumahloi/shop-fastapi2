@@ -1,4 +1,3 @@
-# utils/dependencies.py
 from fastapi import Depends, Header, HTTPException
 from sqlmodel import Session, select
 from ..utils.auth import decode_token
