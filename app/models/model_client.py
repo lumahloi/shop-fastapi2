@@ -20,5 +20,5 @@ class ClientUpdate(SQLModel):
 
 class Client(ClientBase, table=True):
     cli_id: int = Field(default=None, primary_key=True)
-    cli_createdat: Union[datetime, None] = Field(default=datetime.utcnow)
+    cli_createdat: Union[datetime, None] = Field(default=datetime.utcnow())
     cli_active: bool = Field(default=True)

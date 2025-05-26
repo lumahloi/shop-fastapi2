@@ -9,14 +9,14 @@ class ProductBase(SQLModel):
     prod_cat: CategoryType
     prod_price: float = Field(index=True)
     prod_desc: Union[str, None] = Field(max_length=100)
-    prod_barcode: str = Field(min_length=43,max_length=43)
+    prod_barcode: str = Field(min_length=13,max_length=43)
     prod_section: SectionType
     prod_initialstock: Union[int | None] = Field(default=0, gt=-1)
     prod_dtval: Union[datetime | None]
     prod_name: str = Field(min_length=3,max_length=50,index=True)
-    prod_size: List[SizeType] = Field(default=list, sa_column=Column(JSON))
-    prod_color: List[ColorType] = Field(default=list, sa_column=Column(JSON))
-    prod_imgs: List[str] | None = Field(default=list, sa_column=Column(JSON))
+    prod_size: List[SizeType] = Field(default_factory=list, sa_column=Column(JSON))
+    prod_color: List[ColorType] = Field(default_factory=list, sa_column=Column(JSON))
+    prod_imgs: List[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     
 class ProductCreate(ProductBase):
     pass
@@ -35,6 +35,6 @@ class ProductUpdate(SQLModel):
 
 class Product(ProductBase, table=True):
     prod_id: int = Field(default=None, primary_key=True)
-    prod_createdat: datetime = Field(default=datetime.utcnow)
-    prod_lastupdate: datetime = Field(default=datetime.utcnow)
+    prod_createdat: datetime = Field(default=datetime.utcnow())
+    prod_lastupdate: datetime = Field(default=datetime.utcnow())
     prod_stock: int = Field(default=0, gt=-1)
