@@ -1,4 +1,4 @@
-import pytest, io
+import pytest, io, json
 from fastapi.testclient import TestClient
 from app.main import app
 from sqlmodel import Session
@@ -80,7 +80,11 @@ def test_create_product_success(client, session: Session, auth_headers):
         "prod_initialstock": 10,
         "prod_barcode": "1" * 13,
     }
-    response = client.post("/products", json=data, headers=auth_headers)
+    response = client.post(
+        "/products",
+        data={"data": json.dumps(data)},
+        headers=auth_headers
+    )
     assert response.status_code == 200, response.text
     assert response.json()["prod_name"] == "Camiseta Teste"
 
@@ -96,7 +100,11 @@ def test_create_product_invalid_size(client, invalid_size, auth_headers):
         "prod_initialstock": 5,
         "prod_barcode": "1" * 13,
     }
-    response = client.post("/products", json=data, headers=auth_headers)
+    response = client.post(
+        "/products",
+        data={"data": json.dumps(data)},
+        headers=auth_headers
+    )
     assert response.status_code == 400, response.text
     assert "tamanho" in response.json()["detail"]["msg"].lower() or "tamanhos" in response.json()["detail"]["msg"].lower()
 
@@ -112,7 +120,11 @@ def test_create_product_invalid_color(client, invalid_color, auth_headers):
         "prod_initialstock": 3,
         "prod_barcode": "1" * 13,
     }
-    response = client.post("/products", json=data, headers=auth_headers)
+    response = client.post(
+        "/products",
+        data={"data": json.dumps(data)},
+        headers=auth_headers
+    )
     assert response.status_code == 400, response.text
     assert "cor" in response.json()["detail"]["msg"].lower() or "cores" in response.json()["detail"]["msg"].lower()
 
@@ -134,6 +146,7 @@ def test_get_product_by_id(client, session: Session, auth_headers):
     session.refresh(product)
 
     response = client.get(f"/products/{product.prod_id}", headers=auth_headers)
+    
     assert response.status_code == 200, response.text
     assert response.json()["prod_name"] == "Produto Existente"
 
@@ -155,7 +168,11 @@ def test_update_product(client, session: Session, auth_headers):
     session.refresh(product)
 
     data = {"prod_price": 120}
-    response = client.put(f"/products/{product.prod_id}", json=data, headers=auth_headers)
+    response = client.put( 
+        f"/products/{product.prod_id}",
+        data={"data": json.dumps(data)},
+        headers=auth_headers
+    )
     assert response.status_code == 200, response.text
     assert response.json()["prod_price"] == 120
 
@@ -208,3 +225,71 @@ def test_upload_product_image_not_found(client, auth_headers):
     )
     assert response.status_code == 404
     assert response.json()["detail"] == "Produto não encontrado."
+
+def test_update_product_images_success(create_product, client, auth_headers):
+    product = create_product
+    files = [
+        ("files", ("img1.png", io.BytesIO(b"fake image data 1"), "image/png")),
+        ("files", ("img2.jpg", io.BytesIO(b"fake image data 2"), "image/jpeg")),
+    ]
+    response = client.put(
+        f"/products/{product.prod_id}/update-images",
+        files=files,
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "prod_imgs" in data
+    assert len(data["prod_imgs"]) == 2
+    assert data["prod_imgs"][0].endswith(".png") or data["prod_imgs"][0].endswith(".jpg")
+
+def test_update_product_images_not_found(client, auth_headers):
+    files = [
+        ("files", ("img1.png", io.BytesIO(b"fake image data 1"), "image/png")),
+    ]
+    response = client.put(
+        "/products/999999/update-images",
+        files=files,
+        headers=auth_headers
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Produto não encontrado."
+
+def test_delete_product_image_success(create_product, client, auth_headers):
+    product = create_product
+    files = [
+        ("files", ("img1.png", io.BytesIO(b"fake image data 1"), "image/png")),
+    ]
+    upload_resp = client.post(
+        f"/products/{product.prod_id}/upload-image",
+        files=files,
+        headers=auth_headers
+    )
+    assert upload_resp.status_code == 200
+    img_path = upload_resp.json()["prod_imgs"][0]
+    filename = img_path.split("/")[-1]
+
+    delete_resp = client.delete(
+        f"/products/{product.prod_id}/delete-image?filename={filename}",
+        headers=auth_headers
+    )
+    assert delete_resp.status_code == 200
+    data = delete_resp.json()
+    assert filename not in [img.split("/")[-1] for img in data["prod_imgs"]]
+
+def test_delete_product_image_not_found(client, create_product, auth_headers):
+    product = create_product
+    resp = client.delete(
+        f"/products/{product.prod_id}/delete-image?filename=nao_existe.png",
+        headers=auth_headers
+    )
+    assert resp.status_code == 404
+    assert "Imagem não encontrada" in resp.json()["detail"]
+
+def test_delete_product_image_product_not_found(client, auth_headers):
+    resp = client.delete(
+        "/products/999999/delete-image?filename=img1.png",
+        headers=auth_headers
+    )
+    assert resp.status_code == 404
+    assert "Produto não encontrado" in resp.json()["detail"]
