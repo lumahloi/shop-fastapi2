@@ -3,6 +3,7 @@ from sqlalchemy import Column
 from datetime import datetime
 from typing import List, Union
 
+
 class ProductBase(SQLModel):
     prod_cat: str
     prod_price: float = Field(index=True)
@@ -16,8 +17,10 @@ class ProductBase(SQLModel):
     prod_color: List[str] = Field(default_factory=list, sa_column=Column(JSON))
     prod_imgs: List[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     
+    
 class ProductCreate(ProductBase):
     pass
+
 
 class ProductUpdate(SQLModel):
     prod_cat: Union[str | None] = Field(default=None)
@@ -36,3 +39,5 @@ class Product(ProductBase, table=True):
     prod_createdat: datetime = Field(default=datetime.utcnow())
     prod_lastupdate: datetime = Field(default=datetime.utcnow())
     prod_stock: int = Field(default=0, gt=-1)
+    
+    

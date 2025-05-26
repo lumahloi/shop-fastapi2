@@ -4,7 +4,7 @@ import sentry_sdk, os, json
 from uuid import uuid4
 from typing import  Annotated, Union
 from datetime import datetime
-from ..models.model_product import Product, ProductCreate, ProductUpdate
+from ..models.model_product import Product
 from ..utils.custom_types import VALID_SIZE_TYPES, VALID_COLOR_TYPES, VALID_CATEGORY_TYPES, VALID_SECTION_TYPES, CategoryType
 from ..utils.services import to_str_lower, handle_upload_images, handle_delete_images
 from ..utils.session import SessionDep
@@ -350,4 +350,6 @@ def products_delete(
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao deletar produto.")
+    
+    
     

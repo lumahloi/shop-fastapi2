@@ -60,6 +60,7 @@ def orders_get(
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao resgatar pedidos.")
     
+    
    
 @router.post(
     "/orders",
@@ -103,6 +104,8 @@ def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Dep
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao criar pedido.")
+
+
 
 @router.get(
     "/orders/{id}",
@@ -155,6 +158,7 @@ def orders_put(session: SessionDep, data: OrderUpdate, current_user: User = Depe
         raise HTTPException(status_code=401, detail="Erro ao editar pedido.")
     
     
+    
 @router.delete(
     "/orders/{id}",
     summary="Deletar pedido",
@@ -175,3 +179,6 @@ def orders_delete(session: SessionDep, current_user: User = Depends(require_user
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao deletar pedido.")
+    
+    
+    

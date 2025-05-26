@@ -31,6 +31,7 @@ def auth_login(session: SessionDep, data: UserLogin):
         raise HTTPException(status_code=401, detail="Erro ao fazer login.")
 
 
+
 @router.post(
     "/auth/register",
     response_model=User,
@@ -72,6 +73,30 @@ def auth_register(session: SessionDep, data: UserCreate, current_user: User = De
         raise HTTPException(status_code=401, detail="Erro ao registrar usuário.")
 
 
+ 
+@router.post(
+    "/auth/refresh-token",
+    summary="Renovar token JWT",
+    description="Gera um novo token JWT válido a partir de um token expirado ou prestes a expirar.",
+    response_description="Novo token de acesso JWT."
+)
+def auth_refresh_token(authorization: str = Header(...)):
+    try: 
+        token = authorization.replace("Bearer ", "")
+        payload = decode_token(token)
+
+        if not payload:
+            raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
+
+        new_token = create_access_token({"sub": payload.get("sub")})
+        return {"access_token": new_token, "token_type": "bearer"}
+    
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=401, detail="Erro ao realizar refresh JWT.")
+    
+    
+    
 @router.put(
     "/auth/register/{id}",
     response_model=User,
@@ -99,26 +124,6 @@ def change_user_type(session: SessionDep, data: UserUpdate, id: int = Path(..., 
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao editar tipo de usuário.")
-
-
- 
-@router.post(
-    "/auth/refresh-token",
-    summary="Renovar token JWT",
-    description="Gera um novo token JWT válido a partir de um token expirado ou prestes a expirar.",
-    response_description="Novo token de acesso JWT."
-)
-def auth_refresh_token(authorization: str = Header(...)):
-    try: 
-        token = authorization.replace("Bearer ", "")
-        payload = decode_token(token)
-
-        if not payload:
-            raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
-
-        new_token = create_access_token({"sub": payload.get("sub")})
-        return {"access_token": new_token, "token_type": "bearer"}
     
-    except Exception as e:
-        sentry_sdk.capture_exception(e)
-        raise HTTPException(status_code=401, detail="Erro ao realizar refresh JWT.")
+    
+    

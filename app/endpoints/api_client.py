@@ -46,6 +46,7 @@ def clients_get(
         raise HTTPException(status_code=401, detail="Erro ao resgatar clientes.")
 
   
+  
 @router.post(
     "/clients",
     response_model=Client,
@@ -158,3 +159,6 @@ def clients_delete(session: SessionDep, current_user: User = Depends(require_use
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao deletar cliente.")
+    
+    
+    

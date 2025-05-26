@@ -26,6 +26,9 @@ class UserType(str, Enum):
                     return member
         return None
 
+
+
+
 VALID_SIZE_TYPES = [
     "pp",
     "p",
@@ -49,6 +52,8 @@ class SizeType(str, Enum):
                 if member.value == value:
                     return member
         return None
+
+
 
 VALID_COLOR_TYPES = [
     "amarelo",
@@ -94,6 +99,9 @@ class ColorType(str, Enum):
                     return member
         return None
 
+
+
+
 VALID_CATEGORY_TYPES = [
     "masculino",
     "feminino",
@@ -115,6 +123,8 @@ class CategoryType(str, Enum):
                 if member.value == value:
                     return member
         return None
+
+
 
 VALID_SECTION_TYPES = [
     "blusas",
@@ -141,6 +151,9 @@ class SectionType(str, Enum):
                 if member.value == value:
                     return member
         return None
+
+
+
 
 VALID_STATUS_TYPES = [
     "em andamento",
@@ -171,6 +184,8 @@ class StatusType(str, Enum):
                 if member.value == value:
                     return member
         return None
+
+
 
 VALID_PAYMENT_TYPES = [
     "crédito",
