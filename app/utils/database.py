@@ -3,7 +3,7 @@ from sqlalchemy import text
 
 postgresql_file_name = "shop-fastapi"
 port = 5432
-host = 'localhost'
+host = 'postgres'
 user = 'postgres'
 password = 1234567890
 
