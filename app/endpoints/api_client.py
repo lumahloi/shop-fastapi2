@@ -11,7 +11,13 @@ from ..utils.permissions import require_user_type
 
 router = APIRouter()
    
-@router.get("/clients", response_model=list[Client])
+@router.get(
+    "/clients",
+    response_model=list[Client],
+    summary="Listar clientes",
+    description="Retorna uma lista paginada de clientes cadastrados, podendo filtrar por nome e email.",
+    response_description="Lista de clientes encontrados."
+)
 def clients_get(
     session: SessionDep, 
     name: str = Query(None, alias="name"),
@@ -40,7 +46,13 @@ def clients_get(
         raise HTTPException(status_code=401, detail="Erro ao resgatar clientes.")
 
   
-@router.post("/clients", response_model=Client) 
+@router.post(
+    "/clients",
+    response_model=Client,
+    summary="Cadastrar novo cliente",
+    description="Cria um novo cliente com os dados fornecidos. O email e CPF devem ser únicos.",
+    response_description="Cliente cadastrado com sucesso."
+) 
 def clients_post(session: SessionDep, data: ClientCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
     try: 
         email_exists = session.exec(select(Client).where(Client.cli_email == data.cli_email)).first()
@@ -75,7 +87,13 @@ def clients_post(session: SessionDep, data: ClientCreate, current_user: User = D
 
 
 
-@router.get("/clients/{id}", response_model=Client)
+@router.get(
+    "/clients/{id}",
+    response_model=Client,
+    summary="Obter cliente por ID",
+    description="Retorna os dados de um cliente específico a partir do seu ID.",
+    response_description="Dados do cliente encontrado."
+)
 def clients_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
     try: 
         client = session.get(Client, id)
@@ -90,7 +108,13 @@ def clients_get(id: int, session: SessionDep, current_user: User = Depends(requi
 
 
 
-@router.put("/clients/{id}", response_model=Client)
+@router.put(
+    "/clients/{id}",
+    response_model=Client,
+    summary="Atualizar cliente",
+    description="Atualiza os dados de um cliente existente pelo ID.",
+    response_description="Cliente atualizado com sucesso."
+)
 def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
     try: 
         client = session.get(Client, id)
@@ -114,7 +138,12 @@ def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: 
 
 
   
-@router.delete("/clients/{id}")
+@router.delete(
+    "/clients/{id}",
+    summary="Deletar cliente",
+    description="Remove um cliente do sistema pelo seu ID.",
+    response_description="Confirmação de remoção do cliente."
+)
 def clients_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     try: 
         client = session.get(Client, id)
