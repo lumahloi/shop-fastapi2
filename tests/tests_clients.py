@@ -1,14 +1,45 @@
-import pytest, random
+import pytest
 from fastapi.testclient import TestClient
+from datetime import datetime
 from app.main import app
 from app.utils.database import create_db_and_tables
 from app.utils.services import unique_email, unique_cpf
+from app.utils.session import get_session
+from app.models.model_user import User
+from app.utils.auth import get_password_hash
 
 client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def setup_database():
     create_db_and_tables()
+
+@pytest.fixture
+def auth_headers():
+    session = next(get_session())
+    admin_email = "admin@admin.com"
+    admin = session.exec(
+        User.select().where(User.usr_email == admin_email)
+    ).first() if hasattr(User, 'select') else session.query(User).filter_by(usr_email=admin_email).first()
+    if not admin:
+        admin = User(
+            usr_name="admin",
+            usr_email=admin_email,
+            usr_pass=get_password_hash("admin123"),
+            usr_type="administrador",
+            usr_active=True,
+            usr_createdat=datetime.utcnow(),
+            usr_lastupdate=datetime.utcnow()
+        )
+        session.add(admin)
+        session.commit()
+        session.refresh(admin)
+    session.close()
+    login_data = {"usr_email": admin_email, "usr_pass": "admin123"}
+    resp = client.post("/auth/login", json=login_data)
+    assert resp.status_code == 200, resp.text
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 @pytest.fixture
 def client_data():
@@ -20,76 +51,82 @@ def client_data():
         "cli_address": "Rua Exemplo 123"
     }
 
-def test_create_client(client_data):
-    response = client.post("/clients", json=client_data)
-    assert response.status_code == 200
+def test_create_client(client_data, auth_headers):
+    response = client.post("/clients", json=client_data, headers=auth_headers)
+    assert response.status_code == 200, response.text
     data = response.json()
     assert data["cli_email"] == client_data["cli_email"]
     assert data["cli_name"] == client_data["cli_name"]
 
-def test_create_client_duplicate_email(client_data):
-    # cria o primeiro
-    client.post("/clients", json=client_data)
-    # tenta criar o segundo com mesmo e-mail
-    client_data["cli_cpf"] = "00011122233"
-    response = client.post("/clients", json=client_data)
+def test_create_client_duplicate_email(client_data, auth_headers):
+    client.post("/clients", json=client_data, headers=auth_headers)
+    client_data["cli_cpf"] = unique_cpf()
+    response = client.post("/clients", json=client_data, headers=auth_headers)
     assert response.status_code == 401
     assert "email" in response.json()["detail"].lower()
 
-def test_create_client_duplicate_cpf(client_data):
-    # cria o primeiro
-    client.post("/clients", json=client_data)
-    # tenta criar o segundo com mesmo cpf
-    client_data["cli_email"] = "outro@example.com"
-    response = client.post("/clients", json=client_data)
+def test_create_client_duplicate_cpf(client_data, auth_headers):
+    client.post("/clients", json=client_data, headers=auth_headers)
+    client_data["cli_email"] = unique_email()
+    response = client.post("/clients", json=client_data, headers=auth_headers)
     assert response.status_code == 401
     assert "cpf" in response.json()["detail"].lower()
 
-def test_get_clients():
-    response = client.get("/clients")
+def test_get_clients(auth_headers):
+    response = client.get("/clients", headers=auth_headers)
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
-def test_get_clients_with_filter(client_data):
-    client.post("/clients", json=client_data)
-    response = client.get("/clients", params={"name": "João"})
+def test_get_clients_with_filter(client_data, auth_headers):
+    client.post("/clients", json=client_data, headers=auth_headers)
+    response = client.get("/clients", params={"name": "João"}, headers=auth_headers)
     assert response.status_code == 200
     assert any("João" in c["cli_name"] for c in response.json())
 
-def test_get_client_by_id(client_data):
-    create_resp = client.post("/clients", json=client_data)
+def test_get_client_by_id(client_data, auth_headers):
+    create_resp = client.post("/clients", json=client_data, headers=auth_headers)
     assert create_resp.status_code == 200, create_resp.text
     client_id = create_resp.json()["cli_id"]
-    response = client.get(f"/clients/{client_id}")
+    response = client.get(f"/clients/{client_id}", headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["cli_email"] == client_data["cli_email"]
 
-def test_get_client_by_invalid_id():
-    response = client.get("/clients/99999")
+def test_get_client_by_invalid_id(auth_headers):
+    response = client.get("/clients/99999", headers=auth_headers)
     assert response.status_code == 404
 
-def test_update_client(client_data):
-    create_resp = client.post("/clients", json=client_data)
+def test_update_client(client_data, auth_headers):
+    create_resp = client.post("/clients", json=client_data, headers=auth_headers)
     assert create_resp.status_code == 200, create_resp.text
     client_id = create_resp.json()["cli_id"]
-    update_resp = client.put(f"/clients/{client_id}", json={"cli_name": "João Atualizado"})
-    assert create_resp.status_code == 200, create_resp.text
+    update_resp = client.put(f"/clients/{client_id}", json={"cli_name": "João Atualizado"}, headers=auth_headers)
+    assert update_resp.status_code == 200, update_resp.text
     updated_data = update_resp.json()
     assert "cli_name" in updated_data, f"Resposta do PUT: {updated_data}"
     assert updated_data["cli_name"] == "João Atualizado"
 
-def test_update_nonexistent_client():
-    response = client.put("/clients/99999", json={"cli_name": "Testeeeeeeeeeeee", "cli_email": "teste@gmail.com", "cli_cpf": "12345678901", "cli_phone": "12345678901", "cli_address":"Rua N 9"})
+def test_update_nonexistent_client(auth_headers):
+    response = client.put(
+        "/clients/99999",
+        json={
+            "cli_name": "Testeeeeeeeeeeee",
+            "cli_email": unique_email(),
+            "cli_cpf": unique_cpf(),
+            "cli_phone": "12345678901",
+            "cli_address": "Rua N 9"
+        },
+        headers=auth_headers
+    )
     assert response.status_code == 404
 
-def test_delete_client(client_data):
-    create_resp = client.post("/clients", json=client_data)
+def test_delete_client(client_data, auth_headers):
+    create_resp = client.post("/clients", json=client_data, headers=auth_headers)
     assert create_resp.status_code == 200, create_resp.text
     client_id = create_resp.json()["cli_id"]
-    delete_resp = client.delete(f"/clients/{client_id}")
+    delete_resp = client.delete(f"/clients/{client_id}", headers=auth_headers)
     assert delete_resp.status_code == 200
     assert delete_resp.json() == {"ok": True}
 
-def test_delete_nonexistent_client():
-    response = client.delete("/clients/99999")
+def test_delete_nonexistent_client(auth_headers):
+    response = client.delete("/clients/99999", headers=auth_headers)
     assert response.status_code == 404

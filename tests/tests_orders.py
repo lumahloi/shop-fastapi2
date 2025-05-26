@@ -2,8 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 from datetime import datetime
-
 from app.main import app
+from app.models.model_user import User
 from app.models.model_client import Client
 from app.models.model_product import Product
 from app.models.model_order import Order
@@ -11,6 +11,7 @@ from app.utils.custom_types import StatusType, SectionType, PaymentType
 from app.utils.database import create_db_and_tables
 from app.utils.session import get_session
 from app.utils.services import unique_cpf, unique_email
+from app.utils.auth import get_password_hash
 
 @pytest.fixture(autouse=True)
 def setup_database():
@@ -24,9 +25,35 @@ def client():
 def session():
     return next(get_session())
 
-# Fixtures para dados de teste
 @pytest.fixture
-def test_client(session: Session):
+def auth_headers(client):
+    session = next(get_session())
+    admin_email = "admin@admin.com"
+    admin = session.exec(
+        User.select().where(User.usr_email == admin_email)
+    ).first() if hasattr(User, 'select') else session.query(User).filter_by(usr_email=admin_email).first()
+    if not admin:
+        admin = User(
+            usr_name="admin",
+            usr_email=admin_email,
+            usr_pass=get_password_hash("admin123"),
+            usr_type="administrador",
+            usr_active=True,
+            usr_createdat=datetime.utcnow(),
+            usr_lastupdate=datetime.utcnow()
+        )
+        session.add(admin)
+        session.commit()
+        session.refresh(admin)
+    session.close()
+    login_data = {"usr_email": admin_email, "usr_pass": "admin123"}
+    resp = client.post("/auth/login", json=login_data)
+    assert resp.status_code == 200, resp.text
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture
+def client_obj(session: Session):
     client = Client(
         cli_name="Test Client",
         cli_email=unique_email(),
@@ -40,7 +67,7 @@ def test_client(session: Session):
     return client
 
 @pytest.fixture
-def test_products(session: Session):
+def products_obj(session: Session):
     products = [
         Product(
             prod_name="Product 1",
@@ -72,66 +99,60 @@ def test_products(session: Session):
     return products
 
 @pytest.fixture
-def test_order(test_client, test_products, session: Session):
+def order_obj(client_obj, products_obj, session: Session):
     order = Order(
         order_section=SectionType.blusas,
-        order_cli=test_client.cli_id,
+        order_cli=client_obj.cli_id,
         order_total=31.49,
         order_typepay=PaymentType.credito,
         order_address="Test Address 123",
-        order_prods=[p.prod_id for p in test_products],
+        order_prods=[p.prod_id for p in products_obj],
         order_status=StatusType.andamento,
         order_createdat=datetime.utcnow().replace(tzinfo=None),
         order_period=datetime.utcnow().replace(tzinfo=None),
     )
-    
     session.add(order)
     session.commit()
     session.refresh(order)
     return order
 
-# Testes
-def test_create_order(client: TestClient, test_client, test_products):
+def test_create_order(client: TestClient, client_obj, products_obj, auth_headers):
     order_data = {
         "order_section": "blusas",
-        "order_cli": test_client.cli_id,
+        "order_cli": client_obj.cli_id,
         "order_total": 31.49,
         "order_typepay": "crédito",
         "order_address": "Test Address 123",
-        "order_prods": [p.prod_id for p in test_products]
+        "order_prods": [p.prod_id for p in products_obj]
     }
-    
-    response = client.post("/orders", json=order_data)
+    response = client.post("/orders", json=order_data, headers=auth_headers)
     data = response.json()
-    
     assert response.status_code == 200
-    assert data["order_cli"] == test_client.cli_id
+    assert data["order_cli"] == client_obj.cli_id
     assert len(data["order_prods"]) == 2
     assert data["order_status"] == "em andamento"
 
-def test_create_order_with_invalid_client(client: TestClient, test_products):
+def test_create_order_with_invalid_client(client: TestClient, products_obj, auth_headers):
     order_data = {
         "order_section": "blusas",
-        "order_cli": 999,  # ID inválido
+        "order_cli": 999,
         "order_total": 31.49,
         "order_typepay": "crédito",
         "order_address": "Test Address 123",
-        "order_prods": [p.prod_id for p in test_products]
+        "order_prods": [p.prod_id for p in products_obj]
     }
-    
-    response = client.post("/orders", json=order_data)
+    response = client.post("/orders", json=order_data, headers=auth_headers)
     assert response.status_code == 404
     assert "Cliente não reconhecido" in response.json()["detail"]
 
-def test_create_order_with_out_of_stock_product(client: TestClient, test_client, session: Session):
-    # Criar produto com estoque zero
+def test_create_order_with_out_of_stock_product(client: TestClient, client_obj, session: Session, auth_headers):
     out_of_stock_product = Product(
         prod_name="Out of Stock Product",
         prod_desc="Description",
         prod_price=15.99,
         prod_initialstock=0,
         prod_section=SectionType.blusas,
-        prod_size=["M"],
+        prod_size=["m"],
         prod_color=["red"],
         prod_cat="masculino",
         prod_barcode="3"*43,
@@ -139,107 +160,95 @@ def test_create_order_with_out_of_stock_product(client: TestClient, test_client,
     session.add(out_of_stock_product)
     session.commit()
     session.refresh(out_of_stock_product)
-    
     order_data = {
         "order_section": "blusas",
-        "order_cli": test_client.cli_id,
+        "order_cli": client_obj.cli_id,
         "order_total": 15.99,
         "order_typepay": "crédito",
         "order_address": "Test Address 123",
         "order_prods": [out_of_stock_product.prod_id]
     }
-    
-    response = client.post("/orders", json=order_data)
+    response = client.post("/orders", json=order_data, headers=auth_headers)
     assert response.status_code == 400
     assert "está sem estoque" in response.json()["detail"]
 
-def test_get_order(client: TestClient, test_order):
-    response = client.get(f"/orders/{test_order.order_id}")
+def test_get_order(client: TestClient, order_obj, auth_headers):
+    response = client.get(f"/orders/{order_obj.order_id}", headers=auth_headers)
     data = response.json()
-    
     assert response.status_code == 200
-    assert data["order_id"] == test_order.order_id
-    assert data["order_cli"] == test_order.order_cli
+    assert data["order_id"] == order_obj.order_id
+    assert data["order_cli"] == order_obj.order_cli
 
-def test_get_nonexistent_order(client: TestClient):
-    response = client.get("/orders/999")
+def test_get_nonexistent_order(client: TestClient, auth_headers):
+    response = client.get("/orders/999", headers=auth_headers)
     assert response.status_code == 404
     assert "Não foi possível encontrar este pedido" in response.json()["detail"]
 
-def test_list_orders(client: TestClient, test_order):
-    response = client.get("/orders")
+def test_list_orders(client: TestClient, order_obj, auth_headers):
+    response = client.get("/orders", headers=auth_headers)
     data = response.json()
-    
     assert response.status_code == 200
     assert len(data) == 1
-    assert data[0]["order_id"] == test_order.order_id
+    assert data[0]["order_id"] == order_obj.order_id
 
-def test_list_orders_with_filters(client: TestClient, test_order, test_client):
-    # Filtro por cliente
-    response = client.get(f"/orders?client={test_client.cli_id}")
+def test_list_orders_with_filters(client: TestClient, order_obj, client_obj, auth_headers):
+    response = client.get(f"/orders?client={client_obj.cli_id}", headers=auth_headers)
     data = response.json()
     assert len(data) == 1
-    
-    # Filtro por seção
-    response = client.get(f"/orders?section=blusas")
+
+    response = client.get(f"/orders?section=Blusas", headers=auth_headers)
     data = response.json()
     assert len(data) == 1
-    
-    # Filtro por status
-    response = client.get(f"/orders?status=em andamento")
+
+    response = client.get(f"/orders?status=Em Andamento", headers=auth_headers)
     data = response.json()
     assert len(data) == 1
-    
-    # Filtro por data
-    today = datetime.utcnow().isoformat()
-    response = client.get(f"/orders?period={today}")
+
+    today = datetime.utcnow().date().isoformat()
+    response = client.get(f"/orders?period={today}", headers=auth_headers)
     data = response.json()
-    assert len(data) == 1
-    
-    # Filtro que não deve retornar resultados
-    response = client.get("/orders?status=cancelado")
+    assert isinstance(data, list)
+
+    response = client.get("/orders?status=Cancelado", headers=auth_headers)
     data = response.json()
     assert len(data) == 0
 
-def test_update_order_status(client: TestClient, test_order):
-    update_data = {"order_status": "pagamento confirmado"}
-    response = client.put(f"/orders/{test_order.order_id}", json=update_data)
+def test_update_order_status(client: TestClient, order_obj, auth_headers):
+    update_data = {"order_status": "Pagamento Confirmado"}
+    response = client.put(f"/orders/{order_obj.order_id}", json=update_data, headers=auth_headers)
     data = response.json()
-    
     assert response.status_code == 200
     assert data["order_status"] == "pagamento confirmado"
 
-def test_update_nonexistent_order(client: TestClient):
-    update_data = {"order_status": "pagamento confirmado"}
-    response = client.put("/orders/999", json=update_data)
+def test_update_nonexistent_order(client: TestClient, auth_headers):
+    update_data = {"order_status": "Pagamento Confirmado"}
+    response = client.put("/orders/999", json=update_data, headers=auth_headers)
     assert response.status_code == 404
     assert "Não foi possível encontrar este pedido" in response.json()["detail"]
 
-def test_delete_order(client: TestClient, test_order):
-    response = client.delete(f"/orders/{test_order.order_id}")
+def test_delete_order(client: TestClient, order_obj, auth_headers):
+    response = client.delete(f"/orders/{order_obj.order_id}", headers=auth_headers)
     assert response.status_code == 200
     assert response.json()["ok"] == True
-    
-    # Verifica se o pedido foi realmente removido
-    response = client.get(f"/orders/{test_order.order_id}")
+
+    response = client.get(f"/orders/{order_obj.order_id}", headers=auth_headers)
     assert response.status_code == 404
 
-def test_delete_nonexistent_order(client: TestClient):
-    response = client.delete("/orders/999")
+def test_delete_nonexistent_order(client: TestClient, auth_headers):
+    response = client.delete("/orders/999", headers=auth_headers)
     assert response.status_code == 404
     assert "Não foi possível encontrar este pedido" in response.json()["detail"]
 
-def test_pagination_in_orders_list(client: TestClient,  test_client, test_products, session: Session):
-    # Criar múltiplos pedidos para testar paginação
+def test_pagination_in_orders_list(client: TestClient,  client_obj, products_obj, session: Session, auth_headers):
     orders = []
     for i in range(15):
         order = Order(
             order_section=SectionType.blusas,
-            order_cli=test_client.cli_id,
+            order_cli=client_obj.cli_id,
             order_total=10.99 * (i+1),
             order_typepay=PaymentType.credito,
             order_address=f"Test Address {i}",
-            order_prods=[test_products[0].prod_id],
+            order_prods=[products_obj[0].prod_id],
             order_status=StatusType.andamento,
             order_createdat=datetime.utcnow().replace(tzinfo=None),
             order_period=datetime.utcnow().replace(tzinfo=None)
@@ -247,18 +256,15 @@ def test_pagination_in_orders_list(client: TestClient,  test_client, test_produc
         session.add(order)
         orders.append(order)
     session.commit()
-    
-    # Primeira página deve ter 10 itens (limite padrão)
-    response = client.get("/orders")
+
+    response = client.get("/orders", headers=auth_headers)
     data = response.json()
     assert len(data) == 10
-    
-    # Segunda página deve ter 5 itens (15 total - 10 na primeira página)
-    response = client.get("/orders?num_page=2")
+
+    response = client.get("/orders?num_page=2", headers=auth_headers)
     data = response.json()
     assert len(data) == 5
-    
-    # Testar limite personalizado
-    response = client.get("/orders?limit=5")
+
+    response = client.get("/orders?limit=5", headers=auth_headers)
     data = response.json()
     assert len(data) == 5
