@@ -1,43 +1,30 @@
 import pytest
 from fastapi.testclient import TestClient
-from main import app 
-from sqlmodel import SQLModel, Session
 
-from utils.session import get_session
+from app.utils.session import SessionDep
 
-from models.model_client import Client
-from models.model_product import Product
+from app.models.model_client import Client
+from app.models.model_product import Product
 
-from ..utils.database import engine
+from app.utils.database import create_db_and_tables
 
-# Fixture para sessão de teste
-@pytest.fixture(name="session")
-def session_fixture():
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
+@pytest.fixture(autouse=True, scope="module")
+def setup_database():
+    create_db_and_tables()
 
-# Fixture para o client com override da sessão
-@pytest.fixture(name="client")
-def client_fixture(session: Session):
-    def get_override():
-        return session
-    app.dependency_overrides[get_session] = get_override
-    return TestClient(app)
-
-def create_client(session: Session):
+def create_client(session: SessionDep):
     client = Client(cli_name="João", cli_email="joao@email.com", cli_cpf="12345678901", cli_phone="11999999999")
     session.add(client)
     session.commit()
     return client
 
-def create_product(session: Session):
+def create_product(session: SessionDep):
     product = Product(prod_name="Camisa", prod_desc="Algodão", prod_price=50.0, prod_stock=10, prod_size=["M"], prod_color=["preto"], prod_cat="Masculino", prod_barcode="123456789", prod_section="Blusas")
     session.add(product)
     session.commit()
     return product
 
-def test_create_order(client: TestClient, session: Session):
+def test_create_order(client: TestClient, session: SessionDep):
     client_obj = create_client(session)
     product = create_product(session)
 
@@ -52,12 +39,12 @@ def test_create_order(client: TestClient, session: Session):
     assert data["order_status"] == "Em andamento"
     assert product.prod_stock == 9  # estoque decrementado
 
-def test_list_orders(client: TestClient, session: Session):
+def test_list_orders(client: TestClient, session: SessionDep):
     response = client.get("/orders")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
-def test_get_order_by_id(client: TestClient, session: Session):
+def test_get_order_by_id(client: TestClient, session: SessionDep):
     client_obj = create_client(session)
     product = create_product(session)
 
@@ -70,7 +57,7 @@ def test_get_order_by_id(client: TestClient, session: Session):
     assert response.status_code == 200
     assert response.json()["order_id"] == order["order_id"]
 
-def test_update_order_status(client: TestClient, session: Session):
+def test_update_order_status(client: TestClient, session: SessionDep):
     client_obj = create_client(session)
     product = create_product(session)
 
@@ -86,7 +73,7 @@ def test_update_order_status(client: TestClient, session: Session):
     assert response.status_code == 200
     assert response.json()["order_status"] == "Entregue"
 
-def test_delete_order(client: TestClient, session: Session):
+def test_delete_order(client: TestClient, session: SessionDep):
     client_obj = create_client(session)
     product = create_product(session)
 

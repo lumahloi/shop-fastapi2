@@ -1,28 +1,18 @@
 import pytest
-from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, Session, create_engine
 from datetime import datetime
 
-from app.main import app  # ajuste conforme a localização da sua instância FastAPI
+from app.main import app 
 from app.models.model_product import Product
+from app.utils import SessionDep
 
-# Cria banco de dados em memória para testes
-from ..utils.database import engine
+from app.utils.database import create_db_and_tables
 
-@pytest.fixture
-def session():
-    with Session(engine) as session:
-        yield session
+@pytest.fixture(autouse=True, scope="module")
+def setup_database():
+    create_db_and_tables()
 
-@pytest.fixture
-def client(session, monkeypatch):
-    def override_get_session():
-        yield session
-    app.dependency_overrides = {}
-    app.dependency_overrides["app.services.session.SessionDep"] = override_get_session
-    return TestClient(app)
 
-def test_create_product_success(client, session):
+def test_create_product_success(client, session: SessionDep):
     data = {
         "prod_name": "Camiseta Teste",
         "prod_price": 59.99,
@@ -66,7 +56,7 @@ def test_create_product_invalid_color(client, invalid_color):
     assert response.status_code == 400
     assert "cor" in response.json()["detail"]["msg"].lower()
 
-def test_get_product_by_id(client, session):
+def test_get_product_by_id(client, session: SessionDep):
     product = Product(
         prod_name="Produto Existente",
         prod_price=49.90,
@@ -87,7 +77,7 @@ def test_get_product_by_id(client, session):
     assert response.status_code == 200
     assert response.json()["prod_name"] == "Produto Existente"
 
-def test_update_product(client, session):
+def test_update_product(client, session: SessionDep):
     product = Product(
         prod_name="Produto Atualizar",
         prod_price=100,
@@ -109,7 +99,7 @@ def test_update_product(client, session):
     assert response.status_code == 200
     assert response.json()["prod_price"] == 120
 
-def test_delete_product(client, session):
+def test_delete_product(client, session: SessionDep):
     product = Product(
         prod_name="Produto Deletar",
         prod_price=80,

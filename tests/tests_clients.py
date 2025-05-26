@@ -1,15 +1,26 @@
-import pytest
+import pytest, uuid, random
 from fastapi.testclient import TestClient
-from main import app
+from app.main import app
+from app.utils.database import create_db_and_tables
 
 client = TestClient(app)
+
+def unique_email():
+    return f"{''.join([str(random.randint(0, 9)) for _ in range(11)])}@example.com"
+
+def unique_cpf():
+    return ''.join([str(random.randint(0, 9)) for _ in range(11)])
+
+@pytest.fixture(autouse=True)
+def setup_database():
+    create_db_and_tables()
 
 @pytest.fixture
 def client_data():
     return {
         "cli_name": "João Silva",
-        "cli_email": "joao@example.com",
-        "cli_cpf": "12345678900",
+        "cli_email": unique_email(),
+        "cli_cpf": unique_cpf(),
         "cli_phone": "(11) 98765-4321",
         "cli_address": "Rua Exemplo 123"
     }
@@ -52,6 +63,7 @@ def test_get_clients_with_filter(client_data):
 
 def test_get_client_by_id(client_data):
     create_resp = client.post("/clients", json=client_data)
+    assert create_resp.status_code == 200, create_resp.text
     client_id = create_resp.json()["cli_id"]
     response = client.get(f"/clients/{client_id}")
     assert response.status_code == 200
@@ -63,17 +75,21 @@ def test_get_client_by_invalid_id():
 
 def test_update_client(client_data):
     create_resp = client.post("/clients", json=client_data)
+    assert create_resp.status_code == 200, create_resp.text
     client_id = create_resp.json()["cli_id"]
     update_resp = client.put(f"/clients/{client_id}", json={"cli_name": "João Atualizado"})
-    assert update_resp.status_code == 200
-    assert update_resp.json()["cli_name"] == "João Atualizado"
+    assert create_resp.status_code == 200, create_resp.text
+    updated_data = update_resp.json()
+    assert "cli_name" in updated_data, f"Resposta do PUT: {updated_data}"
+    assert updated_data["cli_name"] == "João Atualizado"
 
 def test_update_nonexistent_client():
-    response = client.put("/clients/99999", json={"cli_name": "Teste"})
+    response = client.put("/clients/99999", json={"cli_name": "Testeeeeeeeeeeee", "cli_email": "teste@gmail.com", "cli_cpf": "12345678901", "cli_phone": "12345678901", "cli_address":"Rua N 9"})
     assert response.status_code == 404
 
 def test_delete_client(client_data):
     create_resp = client.post("/clients", json=client_data)
+    assert create_resp.status_code == 200, create_resp.text
     client_id = create_resp.json()["cli_id"]
     delete_resp = client.delete(f"/clients/{client_id}")
     assert delete_resp.status_code == 200
