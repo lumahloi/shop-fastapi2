@@ -13,148 +13,6 @@ from ..utils.permissions import require_user_type
 
 router = APIRouter()
 
-@router.post("/products/{id}/upload-image", 
-    response_model=Product, 
-    summary="Faz upload de imagens para um produto", 
-    response_description="Produto atualizado com as novas imagens.",  
-    description="Adiciona uma ou mais imagens ao produto especificado pelo ID. Apenas administradores, gerentes ou estoquistas podem realizar esta ação."
-)
-def upload_product_image(
-    session: SessionDep,
-    files: list[UploadFile] = File(
-        ...,
-        description="Arquivos de imagem do produto"
-    ),
-    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
-    id: int = Path(..., example=1, description="ID do produto"),
-):
-    try:
-        product = session.get(Product, id)
-        if not product:
-            raise HTTPException(status_code=404, detail="Produto não encontrado.")
-
-        images_dir = os.path.join("static", "product_images")
-        os.makedirs(images_dir, exist_ok=True)
-
-        if not product.prod_imgs:
-            product.prod_imgs = []
-
-        for file in files:
-            ext = os.path.splitext(file.filename)[1]
-            filename = f"{uuid4().hex}{ext}"
-            file_path = os.path.join(images_dir, filename)
-
-            with open(file_path, "wb") as image_file:
-                image_file.write(file.file.read())
-
-            product.prod_imgs.append(f"/static/product_images/{filename}")
-
-        product.prod_lastupdate = datetime.utcnow()
-        session.add(product)
-        session.commit()
-        session.refresh(product)
-
-        return product
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        sentry_sdk.capture_exception(e)
-        raise HTTPException(status_code=500, detail="Erro ao fazer upload das imagens.")
-
-
-
-@router.put("/products/{id}/update-images", 
-    response_model=Product, 
-    summary="Atualiza todas as imagens de um produto", 
-    response_description="Produto com imagens substituídas.",  
-    description="Remove todas as imagens atuais do produto e faz upload de novas imagens. Apenas administradores, gerentes ou estoquistas podem realizar esta ação."
-)
-def update_product_images(
-    session: SessionDep,
-    files: list[UploadFile] = File(...),
-    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
-    id: int = Path(..., example=1, description="ID do produto"),
-):
-    try:
-        product = session.get(Product, id)
-        if not product:
-            raise HTTPException(status_code=404, detail="Produto não encontrado.")
-
-        images_dir = os.path.join("static", "product_images")
-        os.makedirs(images_dir, exist_ok=True)
-
-        product.prod_imgs = []
-
-        for file in files:
-            ext = os.path.splitext(file.filename)[1]
-            filename = f"{uuid4().hex}{ext}"
-            file_path = os.path.join(images_dir, filename)
-
-            with open(file_path, "wb") as image_file:
-                image_file.write(file.file.read())
-
-            product.prod_imgs.append(f"/static/product_images/{filename}")
-
-        product.prod_lastupdate = datetime.utcnow()
-        session.add(product)
-        session.commit()
-        session.refresh(product)
-
-        return product
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        sentry_sdk.capture_exception(e)
-        raise HTTPException(status_code=500, detail="Erro ao atualizar imagens do produto.")
-
-
-
-
-@router.delete("/products/{id}/delete-image", 
-    response_model=Product, 
-    summary="Remove uma imagem específica de um produto", 
-    response_description="Produto atualizado sem a imagem removida.",  
-    description="Remove uma imagem específica do produto pelo nome do arquivo. Apenas administradores, gerentes ou estoquistas podem realizar esta ação."
-)
-def delete_product_image(
-    session: SessionDep,
-    filename: str = Query(example="1.png"),
-    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
-    id: int = Path(..., example=1, description="ID do produto"),
-):
-    try:
-        product = session.get(Product, id)
-        if not product:
-            raise HTTPException(status_code=404, detail="Produto não encontrado.")
-
-        image_path = f"/static/product_images/{filename}"
-
-        if image_path not in product.prod_imgs:
-            raise HTTPException(status_code=404, detail="Imagem não encontrada para este produto.")
-
-        imgs = product.prod_imgs.copy()
-        imgs.remove(image_path)
-        product.prod_imgs = imgs
-
-        file_path = os.path.join("static", "product_images", filename)
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception:
-            pass
-
-        product.prod_lastupdate = datetime.utcnow()
-        session.add(product)
-        session.commit()
-        session.refresh(product)
-
-        return product
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        sentry_sdk.capture_exception(e)
-        raise HTTPException(status_code=500, detail="Erro ao deletar imagem do produto.")
-
 
 
 @router.get("/products", 
@@ -191,8 +49,9 @@ def products_get(
     results = session.exec(query.offset(offset).limit(limit)).all()
     
     return results
-    
-    
+
+
+
 
 @router.post("/products", 
     response_model=Product, 
@@ -273,8 +132,9 @@ def products_post(
         print("Erro ao criar produto:", e)
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=500, detail="Erro ao criar produto.")
- 
- 
+
+
+
 
 @router.get("/products/{id}", 
     response_model=Product, 
@@ -299,7 +159,7 @@ def products_get(
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao resgatar produto.")
-
+    
 
 
 @router.put("/products/{id}", 
@@ -396,5 +256,150 @@ def products_delete(
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao deletar produto.")
     
-    
+
+
+
+@router.put("/products/{id}/update-images", 
+    response_model=Product, 
+    summary="Atualiza todas as imagens de um produto", 
+    response_description="Produto com imagens substituídas.",  
+    description="Remove todas as imagens atuais do produto e faz upload de novas imagens. Apenas administradores, gerentes ou estoquistas podem realizar esta ação."
+)
+def update_product_images(
+    session: SessionDep,
+    files: list[UploadFile] = File(...),
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
+    id: int = Path(..., example=1, description="ID do produto"),
+):
+    try:
+        product = session.get(Product, id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Produto não encontrado.")
+
+        images_dir = os.path.join("static", "product_images")
+        os.makedirs(images_dir, exist_ok=True)
+
+        product.prod_imgs = []
+
+        for file in files:
+            ext = os.path.splitext(file.filename)[1]
+            filename = f"{uuid4().hex}{ext}"
+            file_path = os.path.join(images_dir, filename)
+
+            with open(file_path, "wb") as image_file:
+                image_file.write(file.file.read())
+
+            product.prod_imgs.append(f"/static/product_images/{filename}")
+
+        product.prod_lastupdate = datetime.utcnow()
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+
+        return product
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=500, detail="Erro ao atualizar imagens do produto.")
+
+
+
+@router.post("/products/{id}/upload-image", 
+    response_model=Product, 
+    summary="Faz upload de imagens para um produto", 
+    response_description="Produto atualizado com as novas imagens.",  
+    description="Adiciona uma ou mais imagens ao produto especificado pelo ID. Apenas administradores, gerentes ou estoquistas podem realizar esta ação."
+)
+def upload_product_image(
+    session: SessionDep,
+    files: list[UploadFile] = File(
+        ...,
+        description="Arquivos de imagem do produto"
+    ),
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
+    id: int = Path(..., example=1, description="ID do produto"),
+):
+    try:
+        product = session.get(Product, id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Produto não encontrado.")
+
+        images_dir = os.path.join("static", "product_images")
+        os.makedirs(images_dir, exist_ok=True)
+
+        if not product.prod_imgs:
+            product.prod_imgs = []
+
+        for file in files:
+            ext = os.path.splitext(file.filename)[1]
+            filename = f"{uuid4().hex}{ext}"
+            file_path = os.path.join(images_dir, filename)
+
+            with open(file_path, "wb") as image_file:
+                image_file.write(file.file.read())
+
+            product.prod_imgs.append(f"/static/product_images/{filename}")
+
+        product.prod_lastupdate = datetime.utcnow()
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+
+        return product
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=500, detail="Erro ao fazer upload das imagens.")
+
+
+
+
+@router.delete("/products/{id}/delete-image", 
+    response_model=Product, 
+    summary="Remove uma imagem específica de um produto", 
+    response_description="Produto atualizado sem a imagem removida.",  
+    description="Remove uma imagem específica do produto pelo nome do arquivo. Apenas administradores, gerentes ou estoquistas podem realizar esta ação."
+)
+def delete_product_image(
+    session: SessionDep,
+    filename: str = Query(example="1.png"),
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
+    id: int = Path(..., example=1, description="ID do produto"),
+):
+    try:
+        product = session.get(Product, id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Produto não encontrado.")
+
+        image_path = f"/static/product_images/{filename}"
+
+        if image_path not in product.prod_imgs:
+            raise HTTPException(status_code=404, detail="Imagem não encontrada para este produto.")
+
+        imgs = product.prod_imgs.copy()
+        imgs.remove(image_path)
+        product.prod_imgs = imgs
+
+        file_path = os.path.join("static", "product_images", filename)
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception:
+            pass
+
+        product.prod_lastupdate = datetime.utcnow()
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+
+        return product
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=500, detail="Erro ao deletar imagem do produto.")
+
+
     
