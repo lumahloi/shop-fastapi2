@@ -7,8 +7,9 @@ from ..models.model_product import Product
 from ..models.model_order import Order, OrderCreate, OrderUpdate
 from ..utils.custom_types import StatusType
 from ..utils.session import SessionDep
-from ..utils.dependencies import get_current_user
 from ..models.model_user import User
+from ..utils.permissions import require_user_type
+from ..utils.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -23,7 +24,7 @@ def orders_get(
     client: Union[int | None] = Query(None, alias="client"),
     num_page: int = 1,
     limit: Annotated[int, Query(le=10)] = 10,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_user_type(get_current_user))
 ):
     offset = (num_page - 1) * limit
     
@@ -51,7 +52,7 @@ def orders_get(
 
 # Criar um novo pedido contendo múltiplos produtos, validando estoque disponível.    
 @router.post("/orders", response_model=Order)
-def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Depends(get_current_user)):
+def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor", "atendente"]))):
     client = session.exec(select(Client).where(Client.cli_id == data.order_cli)).first()
     
     if not client:
@@ -83,12 +84,10 @@ def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Dep
 
     return new_order
  
-    
-    
 
 # Obter informações de um pedido específico.    
 @router.get("/orders/{id}", response_model=Order) # GET
-def orders_get(id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
+def orders_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type(get_current_user))):
     order = session.get(Order, id)
     
     if not order:
@@ -96,9 +95,11 @@ def orders_get(id: int, session: SessionDep, current_user: User = Depends(get_cu
     
     return order
 
+
+
 # Atualizar informações de um pedido específico, incluindo status do pedido.
 @router.put("/orders/{id}") # PUT
-def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: User = Depends(get_current_user)):
+def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     order = session.get(Order, id)
     
     if not order:
@@ -119,7 +120,7 @@ def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: Us
     
 # Excluir um pedido.
 @router.delete("/orders/{id}") # DELETE
-def orders_delete(id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
+def orders_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     order = session.get(Order, id)
     
     if not order:

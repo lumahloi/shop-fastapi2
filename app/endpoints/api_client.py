@@ -5,8 +5,9 @@ from datetime import datetime
 import re
 from ..models.model_client import Client, ClientCreate, ClientUpdate
 from ..utils.session import SessionDep
-from ..utils.dependencies import get_current_user
 from ..models.model_user import User
+from ..utils.permissions import require_user_type
+from ..utils.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -18,7 +19,7 @@ def clients_get(
     email: str = Query(None, alias="email"),
     num_page: Union[int | None] = Query(1, alias="num_page"),
     limit: Annotated[int, Query(le=10)] = 10,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_user_type(get_current_user))
 ):
     offset = (num_page - 1) * limit
     
@@ -34,9 +35,11 @@ def clients_get(
     
     return results
 
+
+
 # Criar um novo cliente, validando email e CPF únicos.    
 @router.post("/clients", response_model=Client) # POST
-def clients_post(session: SessionDep, data: ClientCreate, current_user: User = Depends(get_current_user)):
+def clients_post(session: SessionDep, data: ClientCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
     email_exists = session.exec(select(Client).where(Client.cli_email == data.cli_email)).first()
 
     if email_exists:
@@ -63,9 +66,11 @@ def clients_post(session: SessionDep, data: ClientCreate, current_user: User = D
     
     return new_client  
 
+
+
 # Obter informações de um cliente específico.    
 @router.get("/clients/{id}", response_model=Client) # GET
-def clients_get(id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
+def clients_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type(get_current_user))):
     client = session.get(Client, id)
     
     if not client:
@@ -73,9 +78,11 @@ def clients_get(id: int, session: SessionDep, current_user: User = Depends(get_c
     
     return client
 
+
+
 # Atualizar informações de um cliente específico.
 @router.put("/clients/{id}", response_model=Client) # PUT
-def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: User = Depends(get_current_user)):
+def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
     client = session.get(Client, id)
     
     if not client:
@@ -92,9 +99,11 @@ def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: 
 
     return client
 
+
+
 # Excluir um cliente.    
 @router.delete("/clients/{id}") # DELETE
-def clients_delete(id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
+def clients_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     client = session.get(Client, id)
     
     if not client:

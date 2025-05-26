@@ -5,8 +5,9 @@ from ..models.model_user import User, UserCreate, UserUpdate
 from ..utils.custom_types import VALID_USER_TYPES
 from ..utils.session import SessionDep
 from ..utils.auth import verify_password, create_access_token, decode_token, get_password_hash
-from ..utils.dependencies import get_current_user
 from ..models.model_user import User
+from ..utils.permissions import require_user_type
+
 router = APIRouter()
 
 # Autenticação de usuário.
@@ -21,9 +22,10 @@ def auth_login(session: SessionDep, data: UserCreate):
     return {"access_token": token, "token_type": "bearer"}
 
 
+
 # Registro de novo usuário.
 @router.post("/auth/register", response_model=User) # POST
-def auth_register(session: SessionDep, data: UserCreate):
+def auth_register(session: SessionDep, data: UserCreate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     
     if data.usr_type not in VALID_USER_TYPES:
         raise HTTPException(
@@ -53,9 +55,11 @@ def auth_register(session: SessionDep, data: UserCreate):
     
     return new_user
 
+
+
 # Mudar tipo do usuário
 @router.put("/auth/register/{id}", response_model=User) # PUT
-def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_user: User = Depends(get_current_user)):
+def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     
     user = session.get(User, id)
     
@@ -72,6 +76,8 @@ def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_use
     session.refresh(user)
 
     return user
+
+
 
 # Refresh de token JWT.    
 @router.post("/auth/refresh-token")
