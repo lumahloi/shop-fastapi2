@@ -1,4 +1,4 @@
-from fastapi import HTTPException, APIRouter, Header, Depends
+from fastapi import HTTPException, APIRouter, Header, Depends, Path
 from sqlmodel import select
 import sentry_sdk
 from datetime import datetime
@@ -79,7 +79,7 @@ def auth_register(session: SessionDep, data: UserCreate, current_user: User = De
     description="Atualiza o tipo de usuário (perfil) de um usuário existente pelo ID.",
     response_description="Usuário atualizado com sucesso."
 ) 
-def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
+def change_user_type(session: SessionDep, data: UserUpdate, id: int = Path(..., example=1, description="ID do cliente"), current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     try:
         user = session.get(User, id)
         

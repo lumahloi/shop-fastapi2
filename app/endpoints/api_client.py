@@ -1,4 +1,4 @@
-from fastapi import Query, HTTPException, APIRouter, Depends
+from fastapi import Query, HTTPException, APIRouter, Depends, Path
 from sqlmodel import select
 import sentry_sdk
 from typing import  Annotated, Union
@@ -20,8 +20,8 @@ router = APIRouter()
 )
 def clients_get(
     session: SessionDep, 
-    name: str = Query(None, alias="name"),
-    email: str = Query(None, alias="email"),
+    name: str = Query(None, alias="name", example="João da Silva"),
+    email: str = Query(None, alias="email", example="joao@email.com"),
     num_page: Union[int | None] = Query(1, alias="num_page"),
     limit: Annotated[int, Query(le=10)] = 10,
     current_user: User = Depends(require_user_type([]))
@@ -94,7 +94,7 @@ def clients_post(session: SessionDep, data: ClientCreate, current_user: User = D
     description="Retorna os dados de um cliente específico a partir do seu ID.",
     response_description="Dados do cliente encontrado."
 )
-def clients_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
+def clients_get(session: SessionDep, current_user: User = Depends(require_user_type([])), id: int = Path(..., example=1, description="ID do cliente")):
     try: 
         client = session.get(Client, id)
         
@@ -115,7 +115,7 @@ def clients_get(id: int, session: SessionDep, current_user: User = Depends(requi
     description="Atualiza os dados de um cliente existente pelo ID.",
     response_description="Cliente atualizado com sucesso."
 )
-def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
+def clients_put(data: ClientUpdate, session: SessionDep, id: int = Path(..., example=1, description="ID do cliente"), current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
     try: 
         client = session.get(Client, id)
         
@@ -144,7 +144,7 @@ def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: 
     description="Remove um cliente do sistema pelo seu ID.",
     response_description="Confirmação de remoção do cliente."
 )
-def clients_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
+def clients_delete(session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"])), id: int = Path(..., example=1, description="ID do cliente")):
     try: 
         client = session.get(Client, id)
         

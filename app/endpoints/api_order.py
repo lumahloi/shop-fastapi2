@@ -1,4 +1,4 @@
-from fastapi import Query, HTTPException, APIRouter, Depends
+from fastapi import Query, HTTPException, APIRouter, Depends, Path
 from sqlmodel import select
 import sentry_sdk
 from typing import  Annotated, Union
@@ -24,11 +24,11 @@ router = APIRouter()
 )
 def orders_get( 
     session: SessionDep,
-    period: Union[date | None] = Query(None, alias="period"),
-    section: Union[str | None] = Query(None, alias="section"),
-    id: Union[int | None] = Query(None, alias="id"),
-    status: Union[StatusType | None] = Query(None, alias="status"),
-    client: Union[int | None] = Query(None, alias="client"),
+    period: Union[date | None] = Query(None, alias="period", example="2023-12-31"),
+    section: Union[str | None] = Query(None, alias="section", example="Feminino"),
+    id: Union[int | None] = Path(..., example=1, description="ID do pedido"),
+    status: Union[StatusType | None] = Query(None, alias="status", example="em andamento"),
+    client: Union[int | None] = Query(None, alias="client", example=1),
     num_page: int = 1,
     limit: Annotated[int, Query(le=10)] = 10,
     current_user: User = Depends(require_user_type([]))
@@ -111,7 +111,7 @@ def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Dep
     description="Retorna os dados de um pedido específico a partir do seu ID.",
     response_description="Dados do pedido encontrado."
 )
-def orders_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
+def orders_get(session: SessionDep, current_user: User = Depends(require_user_type([])), id: int = Path(..., example=1, description="ID do pedido")):
     try: 
         order = session.get(Order, id)
         
@@ -131,7 +131,7 @@ def orders_get(id: int, session: SessionDep, current_user: User = Depends(requir
     description="Atualiza o status de um pedido existente pelo ID.",
     response_description="Pedido atualizado com sucesso."
 )
-def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
+def orders_put(session: SessionDep, data: OrderUpdate, current_user: User = Depends(require_user_type(["administrador", "gerente"])), id: int = Path(..., example=1, description="ID do pedido"),):
     try: 
         data.order_status = to_str_lower(data.order_status)
         
@@ -161,7 +161,7 @@ def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: Us
     description="Remove um pedido do sistema pelo seu ID.",
     response_description="Confirmação de remoção do pedido."
 )
-def orders_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
+def orders_delete(session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"])), id: int = Path(..., example=1, description="ID do pedido"),):
     try: 
         order = session.get(Order, id)
         

@@ -1,4 +1,4 @@
-from fastapi import Query, HTTPException, APIRouter, Depends, UploadFile, File, Form
+from fastapi import Query, HTTPException, APIRouter, Depends, UploadFile, File, Form, Path
 from sqlmodel import select
 import sentry_sdk, os, json
 from uuid import uuid4
@@ -15,10 +15,13 @@ router = APIRouter()
 
 @router.post("/products/{id}/upload-image", response_model=Product, summary="Faz upload de imagens para um produto", response_description="Produto atualizado com as novas imagens.",  description="Adiciona uma ou mais imagens ao produto especificado pelo ID. Apenas administradores, gerentes ou estoquistas podem realizar esta ação.")
 def upload_product_image(
-    id: int,
     session: SessionDep,
-    files: list[UploadFile] = File(...),
-    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"]))
+    files: list[UploadFile] = File(
+        ...,
+        description="Arquivos de imagem do produto"
+    ),
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
+    id: int = Path(..., example=1, description="ID do produto"),
 ):
     try:
         product = session.get(Product, id)
@@ -57,10 +60,10 @@ def upload_product_image(
 
 @router.put("/products/{id}/update-images", response_model=Product, summary="Atualiza todas as imagens de um produto", response_description="Produto com imagens substituídas.",  description="Remove todas as imagens atuais do produto e faz upload de novas imagens. Apenas administradores, gerentes ou estoquistas podem realizar esta ação.")
 def update_product_images(
-    id: int,
     session: SessionDep,
     files: list[UploadFile] = File(...),
-    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"]))
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
+    id: int = Path(..., example=1, description="ID do produto"),
 ):
     try:
         product = session.get(Product, id)
@@ -99,10 +102,10 @@ def update_product_images(
 
 @router.delete("/products/{id}/delete-image", response_model=Product, summary="Remove uma imagem específica de um produto", response_description="Produto atualizado sem a imagem removida.",  description="Remove uma imagem específica do produto pelo nome do arquivo. Apenas administradores, gerentes ou estoquistas podem realizar esta ação.")
 def delete_product_image(
-    id: int,
-    filename: str,
     session: SessionDep,
-    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"]))
+    filename: str = Query(example="1.png"),
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
+    id: int = Path(..., example=1, description="ID do produto"),
 ):
     try:
         product = session.get(Product, id)
@@ -142,9 +145,9 @@ def delete_product_image(
 @router.get("/products", response_model=list[Product], summary="Lista produtos com filtros opcionais", response_description="Lista de produtos conforme filtros aplicados.",  description="Retorna uma lista paginada de produtos. Permite filtrar por categoria, preço e disponibilidade em estoque.") 
 def products_get(
     session: SessionDep,
-    category: Union[CategoryType | None] = Query(None, alias="category"),
-    price: Union[float | None] = Query(None, alias="price"),
-    availability: Union[bool | None] = Query(None, alias="availability"),
+    category: Union[CategoryType | None] = Query(None, alias="category", example="feminino"),
+    price: Union[float | None] = Query(None, alias="price", example=99.9),
+    availability: Union[bool | None] = Query(None, alias="availability", example=True),
     num_page: Union[int | None] = Query(1, alias="num_page"),
     limit: Annotated[int, Query(le=10)] = 10,
     current_user: User = Depends(require_user_type([]))
@@ -248,7 +251,7 @@ def products_post(
  
 
 @router.get("/products/{id}", response_model=Product, summary="Obtém detalhes de um produto", response_description="Detalhes do produto solicitado.",  description="Retorna os detalhes de um produto específico pelo ID.")
-def products_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
+def products_get(session: SessionDep, current_user: User = Depends(require_user_type([])), id: int = Path(..., example=1, description="ID do produto")):
     try:
     
         product = session.get(Product, id)
@@ -266,11 +269,12 @@ def products_get(id: int, session: SessionDep, current_user: User = Depends(requ
 
 @router.put("/products/{id}", response_model=Product, summary="Atualiza um produto existente", response_description="Produto atualizado com sucesso.",  description="Atualiza os dados de um produto existente, incluindo imagens se fornecidas. Apenas administradores, gerentes ou estoquistas podem realizar esta ação.") 
 def products_put(
-    id: int,
     session: SessionDep,
     data: str = Form(...),
     files: list[UploadFile] = File(None),
-    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"]))):
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"])),
+    id: int = Path(..., example=1, description="ID do produto")
+    ):
     try: 
         product = session.get(Product, id)
 
@@ -327,9 +331,9 @@ def products_put(
 
 @router.delete("/products/{id}", summary="Remove um produto", response_description="Produto removido com sucesso.",  description="Remove um produto do sistema, incluindo suas imagens. Apenas administradores ou gerentes podem realizar esta ação.")
 def products_delete(
-    id: int,
     session: SessionDep,
-    current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
+    current_user: User = Depends(require_user_type(["administrador", "gerente"])),
+    id: int = Path(..., example=1, description="ID do produto")):
     try: 
         product = session.get(Product, id)
         
