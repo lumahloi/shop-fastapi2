@@ -15,7 +15,7 @@ router = APIRouter()
 def auth_login(session: SessionDep, data: UserCreate): 
     user = session.exec(select(User).where(User.usr_email == data.usr_email)).first()
 
-    if not user or not verify_password(data.usr_password, user.usr_password):
+    if not user or not verify_password(data.usr_pass, user.usr_pass):
         raise HTTPException(status_code=401, detail="Credenciais inválidas.")
     
     token = create_access_token({"sub": user.usr_email})

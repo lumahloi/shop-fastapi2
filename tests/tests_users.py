@@ -5,33 +5,41 @@ from app.main import app
 from app.models.model_user import User
 from app.utils.auth import get_password_hash, create_access_token
 from app.utils.custom_types import VALID_USER_TYPES
-from app.utils.session import SessionDep
+from app.utils.session import get_session
+from app.utils.session import Session
 from app.utils.database import create_db_and_tables
+from app.utils.services import unique_email
 
 client = TestClient(app)
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(autouse=True)
 def setup_database():
     create_db_and_tables()
+    
+@pytest.fixture
+def session():
+    return next(get_session())
 
 @pytest.fixture
 def new_user_data():
     return {
-        "usr_email": "test@example.com",
-        "usr_password": "test123",
+        "usr_name": "testezinho",
+        "usr_email": unique_email(),
+        "usr_pass": "test1234",
         "usr_type": VALID_USER_TYPES[0]
     }
 
-def test_register_user_success(session: SessionDep, override_session, new_user_data):
+def test_register_user_success(session: Session,  new_user_data):
     response = client.post("/auth/register", json=new_user_data)
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     data = response.json()
     assert data["usr_email"] == new_user_data["usr_email"]
 
-def test_register_user_duplicate_email(session: SessionDep, override_session, new_user_data):
+def test_register_user_duplicate_email(session: Session,  new_user_data):
     session.add(User(
+        usr_name=new_user_data["usr_name"],
         usr_email=new_user_data["usr_email"],
-        usr_password=get_password_hash(new_user_data["usr_password"]),
+        usr_pass=get_password_hash(new_user_data["usr_pass"]),
         usr_type=new_user_data["usr_type"],
         usr_createdat=datetime.utcnow().replace(tzinfo=None),
         usr_lastupdate=datetime.utcnow().replace(tzinfo=None),
@@ -43,11 +51,12 @@ def test_register_user_duplicate_email(session: SessionDep, override_session, ne
     assert response.status_code == 401
     assert "Já existe um usuário" in response.json()["detail"]
 
-def test_login_success(session: SessionDep, override_session, new_user_data):
-    hashed_password = get_password_hash(new_user_data["usr_password"])
+def test_login_success(session: Session,  new_user_data):
+    hashed_password = get_password_hash(new_user_data["usr_pass"])
     session.add(User(
+        usr_name=new_user_data["usr_name"],
         usr_email=new_user_data["usr_email"],
-        usr_password=hashed_password,
+        usr_pass=hashed_password,
         usr_type=new_user_data["usr_type"],
         usr_createdat=datetime.utcnow().replace(tzinfo=None),
         usr_lastupdate=datetime.utcnow().replace(tzinfo=None),
@@ -60,12 +69,12 @@ def test_login_success(session: SessionDep, override_session, new_user_data):
     data = response.json()
     assert "access_token" in data
 
-def test_login_invalid_credentials(session: SessionDep, override_session, new_user_data):
-    wrong_data = {"usr_email": "wrong@example.com", "usr_password": "wrongpass", "usr_type": new_user_data["usr_type"]}
+def test_login_invalid_credentials(session: Session,  new_user_data):
+    wrong_data = {"usr_name": "testezinho", "usr_email": "wrong@example.com", "usr_pass": "wrongpass", "usr_type": new_user_data["usr_type"]}
     response = client.post("/auth/login", json=wrong_data)
     assert response.status_code == 401
 
-def test_refresh_token_success(session: SessionDep, override_session, new_user_data):
+def test_refresh_token_success(session: Session,  new_user_data):
     token = create_access_token({"sub": new_user_data["usr_email"]})
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -74,16 +83,17 @@ def test_refresh_token_success(session: SessionDep, override_session, new_user_d
     data = response.json()
     assert "access_token" in data
 
-def test_refresh_token_invalid(session: SessionDep, override_session):
+def test_refresh_token_invalid(session: Session):
     headers = {"Authorization": "Bearer invalid.token.here"}
     response = client.post("/auth/refresh-token", headers=headers)
     assert response.status_code == 401
     assert response.json()["detail"] == "Token inválido ou expirado."
 
-def test_change_user_type_success(session: SessionDep, override_session, new_user_data):
+def test_change_user_type_success(session: Session,  new_user_data):
     user = User(
+        usr_name=new_user_data["usr_name"],
         usr_email=new_user_data["usr_email"],
-        usr_password=get_password_hash(new_user_data["usr_password"]),
+        usr_pass=get_password_hash(new_user_data["usr_pass"]),
         usr_type=new_user_data["usr_type"],
         usr_createdat=datetime.utcnow().replace(tzinfo=None),
         usr_lastupdate=datetime.utcnow().replace(tzinfo=None),
