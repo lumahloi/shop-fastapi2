@@ -20,3 +20,7 @@ class User(UserBase, table=True):
     usr_createdat: datetime = Field(default=datetime.utcnow())
     usr_lastupdate: datetime = Field(default=datetime.utcnow())
     usr_pass: str = Field(max_length=128)
+    
+class UserLogin(SQLModel):
+    usr_email: str = Field(min_length=10, max_length=25, regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    usr_pass: str = Field(min_length=6, max_length=25)
