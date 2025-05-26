@@ -1,5 +1,6 @@
 from fastapi import Query, HTTPException, APIRouter, Depends
 from sqlmodel import select
+import sentry_sdk
 from typing import  Annotated, Union
 from datetime import datetime
 import re
@@ -19,91 +20,112 @@ def clients_get(
     limit: Annotated[int, Query(le=10)] = 10,
     current_user: User = Depends(require_user_type([]))
 ):
-    offset = (num_page - 1) * limit
-    
-    query = select(Client)
-
-    if name:
-        query = query.where(Client.cli_name.ilike(f"%{name}%"))
+    try: 
+        offset = (num_page - 1) * limit
         
-    if email:
-        query = query.where(Client.cli_email.ilike(f"%{email}%"))
+        query = select(Client)
 
-    results = session.exec(query.offset(offset).limit(limit)).all()
+        if name:
+            query = query.where(Client.cli_name.ilike(f"%{name}%"))
+            
+        if email:
+            query = query.where(Client.cli_email.ilike(f"%{email}%"))
+
+        results = session.exec(query.offset(offset).limit(limit)).all()
+        
+        return results
     
-    return results
-
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=401, detail="Erro ao resgatar clientes.")
 
   
 @router.post("/clients", response_model=Client) 
 def clients_post(session: SessionDep, data: ClientCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
-    email_exists = session.exec(select(Client).where(Client.cli_email == data.cli_email)).first()
+    try: 
+        email_exists = session.exec(select(Client).where(Client.cli_email == data.cli_email)).first()
 
-    if email_exists:
-        raise HTTPException(status_code=401, detail="Já existe um cliente cadastrado com este email.")
-    
-    cpf_exists = session.exec(select(Client).where(Client.cli_cpf == data.cli_cpf)).first()
+        if email_exists:
+            raise HTTPException(status_code=401, detail="Já existe um cliente cadastrado com este email.")
+        
+        cpf_exists = session.exec(select(Client).where(Client.cli_cpf == data.cli_cpf)).first()
 
-    if cpf_exists:
-        raise HTTPException(status_code=401, detail="Já existe um cliente cadastrado com este CPF.")
+        if cpf_exists:
+            raise HTTPException(status_code=401, detail="Já existe um cliente cadastrado com este CPF.")
+        
+        data.cli_phone = re.sub(r'\D', '', data.cli_phone)
+        
+        data.cli_cpf = re.sub(r'\D', '', data.cli_cpf)
+        
+        new_client = Client(
+            **data.dict(),
+            cli_createdat=datetime.utcnow(),
+            cli_id = None,
+        )
+        
+        session.add(new_client)
+        session.commit()
+        session.refresh(new_client)
+        
+        return new_client 
     
-    data.cli_phone = re.sub(r'\D', '', data.cli_phone)
-    
-    data.cli_cpf = re.sub(r'\D', '', data.cli_cpf)
-    
-    new_client = Client(
-        **data.dict(),
-        cli_createdat=datetime.utcnow(),
-        cli_id = None,
-    )
-    
-    session.add(new_client)
-    session.commit()
-    session.refresh(new_client)
-    
-    return new_client  
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=401, detail="Erro ao cadastrar cliente.")
 
 
 
 @router.get("/clients/{id}", response_model=Client)
 def clients_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
-    client = session.get(Client, id)
-    
-    if not client:
-        raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente.")
-    
-    return client
+    try: 
+        client = session.get(Client, id)
+        
+        if not client:
+            raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente.")
+        
+        return client
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=401, detail="Erro ao resgatar cliente.")
 
 
 
 @router.put("/clients/{id}", response_model=Client)
 def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
-    client = session.get(Client, id)
-    
-    if not client:
-        raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente.")
-    
-    client_data = data.dict(exclude_unset=True)
-    
-    for key, value in client_data.items():
-        setattr(client, key, value)
-            
-    session.add(client)
-    session.commit()
-    session.refresh(client)
+    try: 
+        client = session.get(Client, id)
+        
+        if not client:
+            raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente.")
+        
+        client_data = data.dict(exclude_unset=True)
+        
+        for key, value in client_data.items():
+            setattr(client, key, value)
+                
+        session.add(client)
+        session.commit()
+        session.refresh(client)
 
-    return client
+        return client
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=401, detail="Erro ao editar cliente.")
 
 
   
 @router.delete("/clients/{id}")
 def clients_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
-    client = session.get(Client, id)
-    
-    if not client:
-        raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente.")
-    
-    session.delete(client)
-    session.commit()
-    
-    return {"ok": True}
+    try: 
+        client = session.get(Client, id)
+        
+        if not client:
+            raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente.")
+        
+        session.delete(client)
+        session.commit()
+        
+        return {"ok": True}
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=401, detail="Erro ao deletar cliente.")
