@@ -1,7 +1,7 @@
 from fastapi import HTTPException, APIRouter, Header, Depends
 from sqlmodel import select
 from datetime import datetime
-from ..models.model_user import User, UserCreate, UserUpdate
+from ..models.model_user import User, UserCreate, UserUpdate, UserLogin
 from ..utils.custom_types import VALID_USER_TYPES
 from ..utils.session import SessionDep
 from ..utils.auth import verify_password, create_access_token, decode_token, get_password_hash
@@ -12,7 +12,7 @@ router = APIRouter()
 
 # Autenticação de usuário.
 @router.post("/auth/login")
-def auth_login(session: SessionDep, data: UserCreate): 
+def auth_login(session: SessionDep, data: UserLogin): 
     user = session.exec(select(User).where(User.usr_email == data.usr_email)).first()
 
     if not user or not verify_password(data.usr_pass, user.usr_pass):

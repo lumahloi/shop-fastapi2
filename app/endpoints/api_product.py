@@ -8,7 +8,6 @@ from ..utils.services import to_str_lower
 from ..utils.session import SessionDep
 from ..models.model_user import User
 from ..utils.permissions import require_user_type
-from ..utils.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -21,7 +20,7 @@ def products_get(
     availability: Union[bool | None] = Query(None, alias="availability"),
     num_page: Union[int | None] = Query(1, alias="num_page"),
     limit: Annotated[int, Query(le=10)] = 10,
-    current_user: User = Depends(require_user_type(get_current_user))
+    current_user: User = Depends(require_user_type([]))
 ):
     offset = (num_page - 1) * limit
     
@@ -105,7 +104,7 @@ def products_post(session: SessionDep, data: ProductCreate, current_user: User =
 
 # Obter informações de um produto específico.    
 @router.get("/products/{id}", response_model=Product) # GET
-def products_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type(get_current_user))):
+def products_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
     
     product = session.get(Product, id)
     
@@ -119,7 +118,6 @@ def products_get(id: int, session: SessionDep, current_user: User = Depends(requ
 #  Atualizar informações de um produto específico.
 @router.put("/products/{id}", response_model=Product)  # PUT
 def products_put(id: int, data: ProductUpdate, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"]))):
-    
     product = session.get(Product, id)
 
     if not product:

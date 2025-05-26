@@ -9,7 +9,8 @@ from ..utils.custom_types import StatusType
 from ..utils.session import SessionDep
 from ..models.model_user import User
 from ..utils.permissions import require_user_type
-from ..utils.dependencies import get_current_user
+from ..utils.services import to_str_lower
+
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ def orders_get(
     client: Union[int | None] = Query(None, alias="client"),
     num_page: int = 1,
     limit: Annotated[int, Query(le=10)] = 10,
-    current_user: User = Depends(require_user_type(get_current_user))
+    current_user: User = Depends(require_user_type([]))
 ):
     offset = (num_page - 1) * limit
     
@@ -87,7 +88,7 @@ def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Dep
 
 # Obter informações de um pedido específico.    
 @router.get("/orders/{id}", response_model=Order) # GET
-def orders_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type(get_current_user))):
+def orders_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
     order = session.get(Order, id)
     
     if not order:
@@ -100,6 +101,8 @@ def orders_get(id: int, session: SessionDep, current_user: User = Depends(requir
 # Atualizar informações de um pedido específico, incluindo status do pedido.
 @router.put("/orders/{id}") # PUT
 def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
+    data.order_status = to_str_lower(data.order_status)
+    
     order = session.get(Order, id)
     
     if not order:

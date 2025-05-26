@@ -7,7 +7,6 @@ from ..models.model_client import Client, ClientCreate, ClientUpdate
 from ..utils.session import SessionDep
 from ..models.model_user import User
 from ..utils.permissions import require_user_type
-from ..utils.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -19,7 +18,7 @@ def clients_get(
     email: str = Query(None, alias="email"),
     num_page: Union[int | None] = Query(1, alias="num_page"),
     limit: Annotated[int, Query(le=10)] = 10,
-    current_user: User = Depends(require_user_type(get_current_user))
+    current_user: User = Depends(require_user_type([]))
 ):
     offset = (num_page - 1) * limit
     
@@ -70,7 +69,7 @@ def clients_post(session: SessionDep, data: ClientCreate, current_user: User = D
 
 # Obter informações de um cliente específico.    
 @router.get("/clients/{id}", response_model=Client) # GET
-def clients_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type(get_current_user))):
+def clients_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
     client = session.get(Client, id)
     
     if not client:
