@@ -18,5 +18,5 @@ class UserUpdate(SQLModel):
 class User(UserBase, table=True):
     usr_id: int = Field(default= None, primary_key=True)
     usr_active: bool = True
-    usr_createdat: datetime = Field(default_factory=datetime.utcnow)
-    usr_lastupdate: datetime = Field(default_factory=datetime.utcnow)
+    usr_createdat: datetime = Field(default=datetime.utcnow)
+    usr_lastupdate: datetime = Field(default=datetime.utcnow)

@@ -11,7 +11,7 @@ class OrderBase(SQLModel):
     order_total: float
     order_typepay: PaymentType
     order_address: str = Field(min_length=8,max_length=100)
-    order_prods: List[int] = Field(default_factory=list, sa_column=Column(JSON))
+    order_prods: List[int] = Field(default=list, sa_column=Column(JSON))
     
 class OrderCreate(OrderBase):
     pass
@@ -21,6 +21,6 @@ class OrderUpdate(SQLModel):
 
 class Order(OrderBase, table=True):
     order_id: int = Field(primary_key=True, index=True)
-    order_period: Union[datetime | None] = Field(index=True, default_factory=datetime.utcnow)
+    order_period: Union[datetime | None] = Field(index=True, default=datetime.utcnow)
     order_status: StatusType
-    order_createdat: Union[datetime | None] = Field(default_factory=datetime.utcnow)
+    order_createdat: Union[datetime | None] = Field(default=datetime.utcnow)
