@@ -15,7 +15,13 @@ from ..utils.services import to_str_lower
 
 router = APIRouter()
 
-@router.get("/orders", response_model=list[Order])
+@router.get(
+    "/orders",
+    response_model=list[Order],
+    summary="Listar pedidos",
+    description="Retorna uma lista paginada de pedidos cadastrados, com filtros opcionais por período, seção, status, cliente ou ID.",
+    response_description="Lista de pedidos encontrados."
+)
 def orders_get( 
     session: SessionDep,
     period: Union[date | None] = Query(None, alias="period"),
@@ -55,7 +61,13 @@ def orders_get(
         raise HTTPException(status_code=401, detail="Erro ao resgatar pedidos.")
     
    
-@router.post("/orders", response_model=Order)
+@router.post(
+    "/orders",
+    response_model=Order,
+    summary="Criar novo pedido",
+    description="Cria um novo pedido para um cliente, com os produtos e informações fornecidas.",
+    response_description="Pedido criado com sucesso."
+)
 def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor", "atendente"]))):
     try: 
         client = session.exec(select(Client).where(Client.cli_id == data.order_cli)).first()
@@ -92,7 +104,13 @@ def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Dep
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao criar pedido.")
 
-@router.get("/orders/{id}", response_model=Order) 
+@router.get(
+    "/orders/{id}",
+    response_model=Order,
+    summary="Obter pedido por ID",
+    description="Retorna os dados de um pedido específico a partir do seu ID.",
+    response_description="Dados do pedido encontrado."
+)
 def orders_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
     try: 
         order = session.get(Order, id)
@@ -107,7 +125,12 @@ def orders_get(id: int, session: SessionDep, current_user: User = Depends(requir
 
 
 
-@router.put("/orders/{id}")
+@router.put(
+    "/orders/{id}",
+    summary="Atualizar pedido",
+    description="Atualiza o status de um pedido existente pelo ID.",
+    response_description="Pedido atualizado com sucesso."
+)
 def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     try: 
         data.order_status = to_str_lower(data.order_status)
@@ -132,7 +155,12 @@ def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: Us
         raise HTTPException(status_code=401, detail="Erro ao editar pedido.")
     
     
-@router.delete("/orders/{id}") 
+@router.delete(
+    "/orders/{id}",
+    summary="Deletar pedido",
+    description="Remove um pedido do sistema pelo seu ID.",
+    response_description="Confirmação de remoção do pedido."
+)
 def orders_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     try: 
         order = session.get(Order, id)
