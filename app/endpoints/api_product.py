@@ -17,7 +17,7 @@ def products_get(
     category: Union[CategoryType | None] = Query(None, alias="category"),
     price: Union[float | None] = Query(None, alias="price"),
     availability: Union[bool | None] = Query(None, alias="availability"),
-    num_page: Union[int | 1] = Query(None, alias="num_page"),
+    num_page: Union[int | None] = Query(1, alias="num_page"),
     limit: Annotated[int, Query(le=10)] = 10
 ):
     offset = (num_page - 1) * limit

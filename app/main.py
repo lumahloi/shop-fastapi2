@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from endpoints import api_client, api_order, api_product, api_user
+from .endpoints import api_client, api_order, api_product, api_user
 
 app = FastAPI()
 

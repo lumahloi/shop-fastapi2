@@ -9,7 +9,7 @@ from ..models.model_order import Order, OrderCreate, OrderUpdate
 
 from ..utils.custom_types import StatusType
 
-from utils.session import SessionDep
+from ..utils.session import SessionDep
 
 router = APIRouter()
 

@@ -52,8 +52,8 @@ def clients_post(session: SessionDep, data: ClientCreate):
     
     new_client = Client(
         **data.dict(),
-        cli_active=True,
-        cli_createdat=datetime.utcnow()
+        cli_createdat=datetime.utcnow(),
+        cli_id = None,
     )
     
     session.add(new_client)
@@ -66,8 +66,10 @@ def clients_post(session: SessionDep, data: ClientCreate):
 @router.get("/clients/{id}", response_model=Client) # GET
 def clients_get(id: int, session: SessionDep):
     client = session.get(Client, id)
+    
     if not client:
         raise HTTPException(status_code=404, detail="Não foi possível encontrar este cliente.")
+    
     return client
 
 # Atualizar informações de um cliente específico.
@@ -87,7 +89,7 @@ def clients_put(id: int, data: ClientUpdate, session: SessionDep):
     session.commit()
     session.refresh(client)
 
-    return client   
+    return client
 
 # Excluir um cliente.    
 @router.delete("/clients/{id}") # DELETE

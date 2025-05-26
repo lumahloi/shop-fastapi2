@@ -11,7 +11,7 @@ class ProductBase(SQLModel):
     prod_desc: Union[str | None] = Field(max_length=100)
     prod_barcode: str = Field(min_length=43,max_length=43)
     prod_section: SectionType
-    prod_initialstock = Union[int | 0] = Field(gt=-1)
+    prod_initialstock: Union[int | None] = Field(default=0, gt=-1)
     prod_dtval: Union[datetime | None]
     prod_name: str = Field(min_length=3,max_length=50,index=True)
     prod_size: List[SizeType] = Field(default_factory=list, sa_column=Column(JSON))

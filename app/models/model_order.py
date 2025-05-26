@@ -21,6 +21,6 @@ class OrderUpdate(SQLModel):
 
 class Order(OrderBase, table=True):
     order_id: int = Field(primary_key=True, index=True)
-    order_period: Union[datetime | datetime.utcnow] = Field(index=True)
+    order_period: Union[datetime | None] = Field(index=True, default_factory=datetime.utcnow)
     order_status: StatusType
-    order_createdat: Union[datetime | datetime.utcnow]
+    order_createdat: Union[datetime | None] = Field(default_factory=datetime.utcnow)
