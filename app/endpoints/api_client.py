@@ -16,7 +16,36 @@ router = APIRouter()
     response_model=list[Client],
     summary="Listar clientes",
     description="Retorna uma lista paginada de clientes cadastrados, podendo filtrar por nome e email.",
-    response_description="Lista de clientes encontrados."
+    response_description="Lista de clientes encontrados.",
+    responses={
+        200: {
+            "description": "Lista de clientes encontrados.",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "cli_id": 1,
+                            "cli_name": "João da Silva",
+                            "cli_email": "joao@email.com",
+                            "cli_phone": "11999999999",
+                            "cli_cpf": "12345678901",
+                            "cli_createdat": "2024-06-01T12:00:00",
+                            "cli_address": "Rua Exemplo, 123",
+                            "cli_active": True
+                        }
+                    ]
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao resgatar clientes.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao resgatar clientes."}
+                }
+            }
+        }
+    }
 )
 def clients_get(
     session: SessionDep, 
@@ -52,7 +81,34 @@ def clients_get(
     response_model=Client,
     summary="Cadastrar novo cliente",
     description="Cria um novo cliente com os dados fornecidos. O email e CPF devem ser únicos.",
-    response_description="Cliente cadastrado com sucesso."
+    response_description="Cliente cadastrado com sucesso.",
+    responses={
+        200: {
+            "description": "Cliente cadastrado com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "cli_id": 1,
+                        "cli_name": "João da Silva",
+                        "cli_email": "joao@email.com",
+                        "cli_cpf": "12345678901",
+                        "cli_phone": "11999999999",
+                        "cli_address": "Rua Exemplo, 123",
+                        "cli_createdat": "2024-06-01T12:00:00",
+                        "cli_active": True
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao cadastrar cliente.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao cadastrar cliente."}
+                }
+            }
+        }
+    }
 ) 
 def clients_post(
     session: SessionDep, 
@@ -97,7 +153,42 @@ def clients_post(
     response_model=Client,
     summary="Obter cliente por ID",
     description="Retorna os dados de um cliente específico a partir do seu ID.",
-    response_description="Dados do cliente encontrado."
+    response_description="Dados do cliente encontrado.",
+    responses={
+        200: {
+            "description": "Dados do cliente encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "cli_id": 1,
+                        "cli_name": "João da Silva",
+                        "cli_email": "joao@email.com",
+                        "cli_cpf": "12345678901",
+                        "cli_phone": "11999999999",
+                        "cli_address": "Rua Exemplo, 123",
+                        "cli_createdat": "2024-06-01T12:00:00",
+                        "cli_active": True
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Cliente não encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Não foi possível encontrar este cliente."}
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao resgatar cliente.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao resgatar cliente."}
+                }
+            }
+        }
+    }
 )
 def clients_get(
     session: SessionDep, 
@@ -122,7 +213,42 @@ def clients_get(
     response_model=Client,
     summary="Atualizar cliente",
     description="Atualiza os dados de um cliente existente pelo ID.",
-    response_description="Cliente atualizado com sucesso."
+    response_description="Cliente atualizado com sucesso.",
+    responses={
+        200: {
+            "description": "Cliente atualizado com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "cli_id": 1,
+                        "cli_name": "João da Silva",
+                        "cli_email": "joao@email.com",
+                        "cli_cpf": "12345678901",
+                        "cli_phone": "11999999999",
+                        "cli_address": "Rua Exemplo, 123",
+                        "cli_createdat": "2024-06-01T12:00:00",
+                        "cli_active": True
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Cliente não encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Não foi possível encontrar este cliente."}
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao editar cliente.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao editar cliente."}
+                }
+            }
+        }
+    }
 )
 def clients_put(
     data: ClientUpdate, 
@@ -156,7 +282,33 @@ def clients_put(
     "/clients/{id}",
     summary="Deletar cliente",
     description="Remove um cliente do sistema pelo seu ID.",
-    response_description="Confirmação de remoção do cliente."
+    response_description="Confirmação de remoção do cliente.",
+    responses={
+        200: {
+            "description": "Cliente removido com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {"ok": True}
+                }
+            }
+        },
+        404: {
+            "description": "Cliente não encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Não foi possível encontrar este cliente."}
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao deletar cliente.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao deletar cliente."}
+                }
+            }
+        }
+    }
 )
 def clients_delete(
     session: SessionDep, 
@@ -177,6 +329,5 @@ def clients_delete(
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao deletar cliente.")
-    
-    
-    
+
+

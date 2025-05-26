@@ -20,7 +20,38 @@ router = APIRouter()
     response_model=list[Order],
     summary="Listar pedidos",
     description="Retorna uma lista paginada de pedidos cadastrados, com filtros opcionais por período, seção, status, cliente ou ID.",
-    response_description="Lista de pedidos encontrados."
+    response_description="Lista de pedidos encontrados.",
+    responses={
+        200: {
+            "description": "Lista de pedidos encontrados.",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "order_id": 1,
+                            "order_section": "blusas",
+                            "order_cli": 1,
+                            "order_total": 99.90,
+                            "order_typepay": "crédito",
+                            "order_address": "Rua das Palmeiras 15",
+                            "order_prods": [1, 2],
+                            "order_period": "2024-06-01T12:00:00",
+                            "order_createdat": "2024-06-01T12:00:00",
+                            "order_status": "em andamento"
+                        }
+                    ]
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao resgatar pedidos.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao resgatar pedidos."}
+                }
+            }
+        }
+    }
 )
 def orders_get( 
     session: SessionDep,
@@ -67,7 +98,52 @@ def orders_get(
     response_model=Order,
     summary="Criar novo pedido",
     description="Cria um novo pedido para um cliente, com os produtos e informações fornecidas.",
-    response_description="Pedido criado com sucesso."
+    response_description="Pedido criado com sucesso.",
+    responses={
+        200: {
+            "description": "Pedido criado com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "order_id": 1,
+                        "order_section": "blusas",
+                        "order_cli": 1,
+                        "order_total": 99.90,
+                        "order_typepay": "crédito",
+                        "order_address": "Rua das Palmeiras 15",
+                        "order_prods": [1, 2],
+                        "order_period": "2024-06-01T12:00:00",
+                        "order_createdat": "2024-06-01T12:00:00",
+                        "order_status": "em andamento"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Cliente ou produto não encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Cliente não reconhecido."}
+                }
+            }
+        },
+        400: {
+            "description": "Produto sem estoque.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Produto 'Produto X' está sem estoque."}
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao criar pedido.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao criar pedido."}
+                }
+            }
+        }
+    }
 )
 def orders_post(
     session: SessionDep, 
@@ -116,7 +192,44 @@ def orders_post(
     response_model=Order,
     summary="Obter pedido por ID",
     description="Retorna os dados de um pedido específico a partir do seu ID.",
-    response_description="Dados do pedido encontrado."
+    response_description="Dados do pedido encontrado.",
+    responses={
+        200: {
+            "description": "Dados do pedido encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "order_id": 1,
+                        "order_section": "blusas",
+                        "order_cli": 1,
+                        "order_total": 99.90,
+                        "order_typepay": "crédito",
+                        "order_address": "Rua das Palmeiras 15",
+                        "order_prods": [1, 2],
+                        "order_period": "2024-06-01T12:00:00",
+                        "order_createdat": "2024-06-01T12:00:00",
+                        "order_status": "em andamento"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Pedido não encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Não foi possível encontrar este pedido"}
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao resgatar pedido.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao resgatar pedido."}
+                }
+            }
+        }
+    }
 )
 def orders_get(
     session: SessionDep, 
@@ -140,7 +253,44 @@ def orders_get(
     "/orders/{id}",
     summary="Atualizar pedido",
     description="Atualiza o status de um pedido existente pelo ID.",
-    response_description="Pedido atualizado com sucesso."
+    response_description="Pedido atualizado com sucesso.",
+    responses={
+        200: {
+            "description": "Pedido atualizado com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "order_id": 1,
+                        "order_section": "blusas",
+                        "order_cli": 1,
+                        "order_total": 99.90,
+                        "order_typepay": "crédito",
+                        "order_address": "Rua das Palmeiras 15",
+                        "order_prods": [1, 2],
+                        "order_period": "2024-06-01T12:00:00",
+                        "order_createdat": "2024-06-01T12:00:00",
+                        "order_status": "finalizado"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Pedido não encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Não foi possível encontrar este pedido"}
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao editar pedido.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao editar pedido."}
+                }
+            }
+        }
+    }
 )
 def orders_put(
     session: SessionDep, 
@@ -176,7 +326,33 @@ def orders_put(
     "/orders/{id}",
     summary="Deletar pedido",
     description="Remove um pedido do sistema pelo seu ID.",
-    response_description="Confirmação de remoção do pedido."
+    response_description="Confirmação de remoção do pedido.",
+    responses={
+        200: {
+            "description": "Pedido removido com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {"ok": True}
+                }
+            }
+        },
+        404: {
+            "description": "Pedido não encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Não foi possível encontrar este pedido"}
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao deletar pedido.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Erro ao deletar pedido."}
+                }
+            }
+        }
+    }
 )
 def orders_delete(
     session: SessionDep, 
@@ -196,6 +372,5 @@ def orders_delete(
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao deletar pedido.")
-    
-    
-    
+
+

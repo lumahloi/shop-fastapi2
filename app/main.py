@@ -11,7 +11,27 @@ sentry_sdk.init(
 
 app = FastAPI()
 
-@app.get("/sentry-debug")
+@app.get(
+    "/sentry-debug",
+    responses={
+        200: {
+            "description": "Endpoint para testar integração com Sentry.",
+            "content": {
+                "application/json": {
+                    "example": {"message": "Sentry debug endpoint"}
+                }
+            }
+        },
+        404: {
+            "description": "Recurso não encontrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not Found"}
+                }
+            }
+        }
+    }
+)
 async def trigger_error():
     division_by_zero = 1 / 0
 

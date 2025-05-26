@@ -15,7 +15,28 @@ router = APIRouter()
     "/auth/login",
     summary="Login do usuário",
     description="Realiza a autenticação do usuário e retorna um token JWT válido.",
-    response_description="Token de acesso JWT para autenticação."
+    response_description="Token de acesso JWT para autenticação.",
+    responses={
+        200: {
+            "description": "Login realizado com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "token_type": "bearer"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Credenciais inválidas ou erro ao fazer login.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Credenciais inválidas."}
+                }
+            }
+        }
+    }
 )
 def auth_login(
     session: SessionDep, 
@@ -40,7 +61,45 @@ def auth_login(
     response_model=User,
     summary="Registrar novo usuário",
     description="Cria um novo usuário no sistema. Apenas administradores ou gerentes podem registrar novos usuários.",
-    response_description="Usuário registrado com sucesso."
+    response_description="Usuário registrado com sucesso.",
+    responses={
+        200: {
+            "description": "Usuário registrado com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "usr_id": 1,
+                        "usr_name": "João da Silva",
+                        "usr_email": "joao@email.com",
+                        "usr_type": "administrador",
+                        "usr_active": True,
+                        "usr_createdat": "2024-06-01T12:00:00",
+                        "usr_lastupdate": "2024-06-01T12:00:00",
+                        "usr_pass": "hash_senha"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Tipo de usuário inválido.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "msg": "Tipo de usuário inválido: 'invalido'",
+                        "tipos_validos": ["administrador", "gerente", "vendedor", "estoquista", "atendente"]
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Erro ao registrar usuário ou email já cadastrado.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Já existe um usuário cadastrado com este email."}
+                }
+            }
+        }
+    }
 )
 def auth_register(
     session: SessionDep, 
@@ -85,7 +144,28 @@ def auth_register(
     "/auth/refresh-token",
     summary="Renovar token JWT",
     description="Gera um novo token JWT válido a partir de um token expirado ou prestes a expirar.",
-    response_description="Novo token de acesso JWT."
+    response_description="Novo token de acesso JWT.",
+    responses={
+        200: {
+            "description": "Token renovado com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "token_type": "bearer"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Token inválido ou erro ao realizar refresh JWT.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Token inválido ou expirado."}
+                }
+            }
+        }
+    }
 )
 def auth_refresh_token(
     authorization: str = Header(...)
@@ -111,7 +191,34 @@ def auth_refresh_token(
     response_model=User,
     summary="Atualizar tipo de usuário",
     description="Atualiza o tipo de usuário (perfil) de um usuário existente pelo ID.",
-    response_description="Usuário atualizado com sucesso."
+    response_description="Usuário atualizado com sucesso.",
+    responses={
+        200: {
+            "description": "Usuário atualizado com sucesso.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "usr_id": 1,
+                        "usr_name": "João da Silva",
+                        "usr_email": "joao@email.com",
+                        "usr_type": "gerente",
+                        "usr_active": True,
+                        "usr_createdat": "2024-06-01T12:00:00",
+                        "usr_lastupdate": "2024-06-01T12:10:00",
+                        "usr_pass": "hash_senha"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Usuário não encontrado ou erro ao editar tipo de usuário.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Não foi possível encontrar este usuário."}
+                }
+            }
+        }
+    }
 ) 
 def change_user_type(
     session: SessionDep, 
@@ -138,6 +245,5 @@ def change_user_type(
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao editar tipo de usuário.")
-    
-    
-    
+
+
