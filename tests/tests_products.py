@@ -1,73 +1,7 @@
 import pytest, io, json
-from fastapi.testclient import TestClient
-from app.main import app
 from sqlmodel import Session
 from datetime import datetime
-from app.models.model_user import User
 from app.models.model_product import Product
-from app.utils.session import get_session
-from app.utils.database import create_db_and_tables
-from app.utils.auth import get_password_hash
-
-@pytest.fixture(autouse=True)
-def setup_database():
-    create_db_and_tables()
-
-@pytest.fixture
-def session():
-    return next(get_session())
-
-@pytest.fixture
-def client():
-    return TestClient(app)
-
-@pytest.fixture
-def create_product(session):
-    product = Product(
-        prod_cat="roupa",
-        prod_price=10.0,
-        prod_desc="Produto teste",
-        prod_barcode="1234567890123",
-        prod_section="masculino",
-        prod_initialstock=10,
-        prod_name="Camiseta Teste",
-        prod_size=["m"],
-        prod_color=["azul"],
-        prod_imgs=[]
-    )
-    session.add(product)
-    session.commit()
-    session.refresh(product)
-    yield product
-    session.delete(product)
-    session.commit()
-
-@pytest.fixture
-def auth_headers(client):
-    session = next(get_session())
-    admin_email = "admin@admin.com"
-    admin = session.exec(
-        User.select().where(User.usr_email == admin_email)
-    ).first() if hasattr(User, 'select') else session.query(User).filter_by(usr_email=admin_email).first()
-    if not admin:
-        admin = User(
-            usr_name="admin",
-            usr_email=admin_email,
-            usr_pass=get_password_hash("admin123"),
-            usr_type="administrador",
-            usr_active=True,
-            usr_createdat=datetime.utcnow(),
-            usr_lastupdate=datetime.utcnow()
-        )
-        session.add(admin)
-        session.commit()
-        session.refresh(admin)
-    session.close()
-    login_data = {"usr_email": admin_email, "usr_pass": "admin123"}
-    resp = client.post("/auth/login", json=login_data)
-    assert resp.status_code == 200, resp.text
-    token = resp.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
 
 def test_create_product_success(client, session: Session, auth_headers):
     data = {

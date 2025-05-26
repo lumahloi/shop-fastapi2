@@ -1,55 +1,8 @@
-import pytest
 from fastapi.testclient import TestClient
-from datetime import datetime
 from app.main import app
-from app.utils.database import create_db_and_tables
 from app.utils.services import unique_email, unique_cpf
-from app.utils.session import get_session
-from app.models.model_user import User
-from app.utils.auth import get_password_hash
 
 client = TestClient(app)
-
-@pytest.fixture(autouse=True)
-def setup_database():
-    create_db_and_tables()
-
-@pytest.fixture
-def auth_headers():
-    session = next(get_session())
-    admin_email = "admin@admin.com"
-    admin = session.exec(
-        User.select().where(User.usr_email == admin_email)
-    ).first() if hasattr(User, 'select') else session.query(User).filter_by(usr_email=admin_email).first()
-    if not admin:
-        admin = User(
-            usr_name="admin",
-            usr_email=admin_email,
-            usr_pass=get_password_hash("admin123"),
-            usr_type="administrador",
-            usr_active=True,
-            usr_createdat=datetime.utcnow(),
-            usr_lastupdate=datetime.utcnow()
-        )
-        session.add(admin)
-        session.commit()
-        session.refresh(admin)
-    session.close()
-    login_data = {"usr_email": admin_email, "usr_pass": "admin123"}
-    resp = client.post("/auth/login", json=login_data)
-    assert resp.status_code == 200, resp.text
-    token = resp.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
-
-@pytest.fixture
-def client_data():
-    return {
-        "cli_name": "João Silva",
-        "cli_email": unique_email(),
-        "cli_cpf": unique_cpf(),
-        "cli_phone": "(11) 98765-4321",
-        "cli_address": "Rua Exemplo 123"
-    }
 
 def test_create_client(client_data, auth_headers):
     response = client.post("/clients", json=client_data, headers=auth_headers)
