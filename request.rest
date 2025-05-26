@@ -1,9 +1,0 @@
-POST http://0.0.0.0:8000/clients
-
-{
-  "cli_name": "João Silva",
-  "cli_email": "joao2@example.com",
-  "cli_cpf": "17556109710",
-  "cli_phone": "(11) 98765-4321",
-  "cli_address": "Rua Exemplo 123"
-}
