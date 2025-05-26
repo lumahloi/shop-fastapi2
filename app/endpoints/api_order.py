@@ -72,7 +72,7 @@ def orders_post(session: SessionDep, data: OrderCreate):
 
     new_order = Order(
         **data.dict(),
-        order_period=datetime.utcnow(),
+        order_period=datetime.utcnow(),   
         order_status=StatusType.andamento,
         order_createdat=datetime.utcnow(),
     )
