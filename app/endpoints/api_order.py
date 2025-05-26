@@ -69,7 +69,11 @@ def orders_get(
     description="Cria um novo pedido para um cliente, com os produtos e informações fornecidas.",
     response_description="Pedido criado com sucesso."
 )
-def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor", "atendente"]))):
+def orders_post(
+    session: SessionDep, 
+    data: OrderCreate, 
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor", "atendente"]))
+):
     try: 
         client = session.exec(select(Client).where(Client.cli_id == data.order_cli)).first()
         
@@ -114,7 +118,11 @@ def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Dep
     description="Retorna os dados de um pedido específico a partir do seu ID.",
     response_description="Dados do pedido encontrado."
 )
-def orders_get(session: SessionDep, current_user: User = Depends(require_user_type([])), id: int = Path(..., example=1, description="ID do pedido")):
+def orders_get(
+    session: SessionDep, 
+    current_user: User = Depends(require_user_type([])), 
+    id: int = Path(..., example=1, description="ID do pedido")
+):
     try: 
         order = session.get(Order, id)
         
@@ -134,7 +142,12 @@ def orders_get(session: SessionDep, current_user: User = Depends(require_user_ty
     description="Atualiza o status de um pedido existente pelo ID.",
     response_description="Pedido atualizado com sucesso."
 )
-def orders_put(session: SessionDep, data: OrderUpdate, current_user: User = Depends(require_user_type(["administrador", "gerente"])), id: int = Path(..., example=1, description="ID do pedido"),):
+def orders_put(
+    session: SessionDep, 
+    data: OrderUpdate, 
+    current_user: User = Depends(require_user_type(["administrador", "gerente"])), 
+    id: int = Path(..., example=1, description="ID do pedido"),
+):
     try: 
         data.order_status = to_str_lower(data.order_status)
         
@@ -165,7 +178,11 @@ def orders_put(session: SessionDep, data: OrderUpdate, current_user: User = Depe
     description="Remove um pedido do sistema pelo seu ID.",
     response_description="Confirmação de remoção do pedido."
 )
-def orders_delete(session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"])), id: int = Path(..., example=1, description="ID do pedido"),):
+def orders_delete(
+    session: SessionDep, 
+    current_user: User = Depends(require_user_type(["administrador", "gerente"])), 
+    id: int = Path(..., example=1, description="ID do pedido"),
+):
     try: 
         order = session.get(Order, id)
         

@@ -54,7 +54,11 @@ def clients_get(
     description="Cria um novo cliente com os dados fornecidos. O email e CPF devem ser únicos.",
     response_description="Cliente cadastrado com sucesso."
 ) 
-def clients_post(session: SessionDep, data: ClientCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
+def clients_post(
+    session: SessionDep, 
+    data: ClientCreate, 
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))
+):
     try: 
         email_exists = session.exec(select(Client).where(Client.cli_email == data.cli_email)).first()
 
@@ -95,7 +99,11 @@ def clients_post(session: SessionDep, data: ClientCreate, current_user: User = D
     description="Retorna os dados de um cliente específico a partir do seu ID.",
     response_description="Dados do cliente encontrado."
 )
-def clients_get(session: SessionDep, current_user: User = Depends(require_user_type([])), id: int = Path(..., example=1, description="ID do cliente")):
+def clients_get(
+    session: SessionDep, 
+    current_user: User = Depends(require_user_type([])), 
+    id: int = Path(..., example=1, description="ID do cliente")
+):
     try: 
         client = session.get(Client, id)
         
@@ -116,7 +124,12 @@ def clients_get(session: SessionDep, current_user: User = Depends(require_user_t
     description="Atualiza os dados de um cliente existente pelo ID.",
     response_description="Cliente atualizado com sucesso."
 )
-def clients_put(data: ClientUpdate, session: SessionDep, id: int = Path(..., example=1, description="ID do cliente"), current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
+def clients_put(
+    data: ClientUpdate, 
+    session: SessionDep, 
+    id: int = Path(..., example=1, description="ID do cliente"), 
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))
+):
     try: 
         client = session.get(Client, id)
         
@@ -145,7 +158,11 @@ def clients_put(data: ClientUpdate, session: SessionDep, id: int = Path(..., exa
     description="Remove um cliente do sistema pelo seu ID.",
     response_description="Confirmação de remoção do cliente."
 )
-def clients_delete(session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"])), id: int = Path(..., example=1, description="ID do cliente")):
+def clients_delete(
+    session: SessionDep, 
+    current_user: User = Depends(require_user_type(["administrador", "gerente"])), 
+    id: int = Path(..., example=1, description="ID do cliente")
+):
     try: 
         client = session.get(Client, id)
         
@@ -156,6 +173,7 @@ def clients_delete(session: SessionDep, current_user: User = Depends(require_use
         session.commit()
         
         return {"ok": True}
+    
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=401, detail="Erro ao deletar cliente.")

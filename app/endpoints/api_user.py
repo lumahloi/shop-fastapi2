@@ -17,7 +17,10 @@ router = APIRouter()
     description="Realiza a autenticação do usuário e retorna um token JWT válido.",
     response_description="Token de acesso JWT para autenticação."
 )
-def auth_login(session: SessionDep, data: UserLogin):
+def auth_login(
+    session: SessionDep, 
+    data: UserLogin
+):
     try: 
         user = session.exec(select(User).where(User.usr_email == data.usr_email)).first()
 
@@ -39,7 +42,11 @@ def auth_login(session: SessionDep, data: UserLogin):
     description="Cria um novo usuário no sistema. Apenas administradores ou gerentes podem registrar novos usuários.",
     response_description="Usuário registrado com sucesso."
 )
-def auth_register(session: SessionDep, data: UserCreate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
+def auth_register(
+    session: SessionDep, 
+    data: UserCreate, 
+    current_user: User = Depends(require_user_type(["administrador", "gerente"]))
+):
     try: 
         if data.usr_type not in VALID_USER_TYPES:
             raise HTTPException(
@@ -80,7 +87,9 @@ def auth_register(session: SessionDep, data: UserCreate, current_user: User = De
     description="Gera um novo token JWT válido a partir de um token expirado ou prestes a expirar.",
     response_description="Novo token de acesso JWT."
 )
-def auth_refresh_token(authorization: str = Header(...)):
+def auth_refresh_token(
+    authorization: str = Header(...)
+):
     try: 
         token = authorization.replace("Bearer ", "")
         payload = decode_token(token)
@@ -104,7 +113,12 @@ def auth_refresh_token(authorization: str = Header(...)):
     description="Atualiza o tipo de usuário (perfil) de um usuário existente pelo ID.",
     response_description="Usuário atualizado com sucesso."
 ) 
-def change_user_type(session: SessionDep, data: UserUpdate, id: int = Path(..., example=1, description="ID do cliente"), current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
+def change_user_type(
+    session: SessionDep, 
+    data: UserUpdate, 
+    id: int = Path(..., example=1, description="ID do cliente"), 
+    current_user: User = Depends(require_user_type(["administrador", "gerente"]))
+):
     try:
         user = session.get(User, id)
         
