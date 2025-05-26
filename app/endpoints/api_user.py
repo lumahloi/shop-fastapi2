@@ -11,7 +11,12 @@ from ..utils.permissions import require_user_type
 
 router = APIRouter()
 
-@router.post("/auth/login")
+@router.post(
+    "/auth/login",
+    summary="Login do usuário",
+    description="Realiza a autenticação do usuário e retorna um token JWT válido.",
+    response_description="Token de acesso JWT para autenticação."
+)
 def auth_login(session: SessionDep, data: UserLogin):
     try: 
         user = session.exec(select(User).where(User.usr_email == data.usr_email)).first()
@@ -26,7 +31,13 @@ def auth_login(session: SessionDep, data: UserLogin):
         raise HTTPException(status_code=401, detail="Erro ao fazer login.")
 
 
-@router.post("/auth/register", response_model=User)
+@router.post(
+    "/auth/register",
+    response_model=User,
+    summary="Registrar novo usuário",
+    description="Cria um novo usuário no sistema. Apenas administradores ou gerentes podem registrar novos usuários.",
+    response_description="Usuário registrado com sucesso."
+)
 def auth_register(session: SessionDep, data: UserCreate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     try: 
         if data.usr_type not in VALID_USER_TYPES:
@@ -61,7 +72,13 @@ def auth_register(session: SessionDep, data: UserCreate, current_user: User = De
         raise HTTPException(status_code=401, detail="Erro ao registrar usuário.")
 
 
-@router.put("/auth/register/{id}", response_model=User) 
+@router.put(
+    "/auth/register/{id}",
+    response_model=User,
+    summary="Atualizar tipo de usuário",
+    description="Atualiza o tipo de usuário (perfil) de um usuário existente pelo ID.",
+    response_description="Usuário atualizado com sucesso."
+) 
 def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     try:
         user = session.get(User, id)
@@ -85,7 +102,12 @@ def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_use
 
 
  
-@router.post("/auth/refresh-token")
+@router.post(
+    "/auth/refresh-token",
+    summary="Renovar token JWT",
+    description="Gera um novo token JWT válido a partir de um token expirado ou prestes a expirar.",
+    response_description="Novo token de acesso JWT."
+)
 def auth_refresh_token(authorization: str = Header(...)):
     try: 
         token = authorization.replace("Bearer ", "")
