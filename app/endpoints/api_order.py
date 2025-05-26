@@ -1,15 +1,14 @@
-from fastapi import Query, HTTPException, APIRouter
+from fastapi import Query, HTTPException, APIRouter, Depends
 from sqlmodel import select
 from typing import  Annotated, Union
 from datetime import datetime, date
-
 from ..models.model_client import Client
 from ..models.model_product import Product
 from ..models.model_order import Order, OrderCreate, OrderUpdate
-
 from ..utils.custom_types import StatusType
-
 from ..utils.session import SessionDep
+from ..utils.dependencies import get_current_user
+from ..models.model_user import User
 
 router = APIRouter()
 
@@ -23,7 +22,8 @@ def orders_get(
     status: Union[StatusType | None] = Query(None, alias="status"),
     client: Union[int | None] = Query(None, alias="client"),
     num_page: int = 1,
-    limit: Annotated[int, Query(le=10)] = 10
+    limit: Annotated[int, Query(le=10)] = 10,
+    current_user: User = Depends(get_current_user)
 ):
     offset = (num_page - 1) * limit
     
@@ -51,7 +51,7 @@ def orders_get(
 
 # Criar um novo pedido contendo múltiplos produtos, validando estoque disponível.    
 @router.post("/orders", response_model=Order)
-def orders_post(session: SessionDep, data: OrderCreate):
+def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Depends(get_current_user)):
     client = session.exec(select(Client).where(Client.cli_id == data.order_cli)).first()
     
     if not client:
@@ -88,7 +88,7 @@ def orders_post(session: SessionDep, data: OrderCreate):
 
 # Obter informações de um pedido específico.    
 @router.get("/orders/{id}", response_model=Order) # GET
-def orders_get(id: int, session: SessionDep):
+def orders_get(id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
     order = session.get(Order, id)
     
     if not order:
@@ -98,7 +98,7 @@ def orders_get(id: int, session: SessionDep):
 
 # Atualizar informações de um pedido específico, incluindo status do pedido.
 @router.put("/orders/{id}") # PUT
-def orders_put(id: int, session: SessionDep, data: OrderUpdate):
+def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: User = Depends(get_current_user)):
     order = session.get(Order, id)
     
     if not order:
@@ -119,7 +119,7 @@ def orders_put(id: int, session: SessionDep, data: OrderUpdate):
     
 # Excluir um pedido.
 @router.delete("/orders/{id}") # DELETE
-def orders_delete(id: int, session: SessionDep):
+def orders_delete(id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
     order = session.get(Order, id)
     
     if not order:

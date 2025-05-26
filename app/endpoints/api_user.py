@@ -1,13 +1,12 @@
-from fastapi import HTTPException, APIRouter, Header
+from fastapi import HTTPException, APIRouter, Header, Depends
 from sqlmodel import select
 from datetime import datetime
-
 from ..models.model_user import User, UserCreate, UserUpdate
 from ..utils.custom_types import VALID_USER_TYPES
-
 from ..utils.session import SessionDep
 from ..utils.auth import verify_password, create_access_token, decode_token, get_password_hash
-
+from ..utils.dependencies import get_current_user
+from ..models.model_user import User
 router = APIRouter()
 
 # Autenticação de usuário.
@@ -56,7 +55,7 @@ def auth_register(session: SessionDep, data: UserCreate):
 
 # Mudar tipo do usuário
 @router.put("/auth/register/{id}", response_model=User) # PUT
-def change_user_type(session: SessionDep, data: UserUpdate, id: int):
+def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_user: User = Depends(get_current_user)):
     
     user = session.get(User, id)
     

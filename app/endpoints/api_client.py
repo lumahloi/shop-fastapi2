@@ -1,12 +1,12 @@
-from fastapi import Query, HTTPException, APIRouter
+from fastapi import Query, HTTPException, APIRouter, Depends
 from sqlmodel import select
 from typing import  Annotated, Union
 from datetime import datetime
 import re
-
 from ..models.model_client import Client, ClientCreate, ClientUpdate
-
 from ..utils.session import SessionDep
+from ..utils.dependencies import get_current_user
+from ..models.model_user import User
 
 router = APIRouter()
 
@@ -18,6 +18,7 @@ def clients_get(
     email: str = Query(None, alias="email"),
     num_page: Union[int | None] = Query(1, alias="num_page"),
     limit: Annotated[int, Query(le=10)] = 10,
+    current_user: User = Depends(get_current_user)
 ):
     offset = (num_page - 1) * limit
     
@@ -35,7 +36,7 @@ def clients_get(
 
 # Criar um novo cliente, validando email e CPF únicos.    
 @router.post("/clients", response_model=Client) # POST
-def clients_post(session: SessionDep, data: ClientCreate):
+def clients_post(session: SessionDep, data: ClientCreate, current_user: User = Depends(get_current_user)):
     email_exists = session.exec(select(Client).where(Client.cli_email == data.cli_email)).first()
 
     if email_exists:
@@ -64,7 +65,7 @@ def clients_post(session: SessionDep, data: ClientCreate):
 
 # Obter informações de um cliente específico.    
 @router.get("/clients/{id}", response_model=Client) # GET
-def clients_get(id: int, session: SessionDep):
+def clients_get(id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
     client = session.get(Client, id)
     
     if not client:
@@ -74,7 +75,7 @@ def clients_get(id: int, session: SessionDep):
 
 # Atualizar informações de um cliente específico.
 @router.put("/clients/{id}", response_model=Client) # PUT
-def clients_put(id: int, data: ClientUpdate, session: SessionDep):
+def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: User = Depends(get_current_user)):
     client = session.get(Client, id)
     
     if not client:
@@ -93,7 +94,7 @@ def clients_put(id: int, data: ClientUpdate, session: SessionDep):
 
 # Excluir um cliente.    
 @router.delete("/clients/{id}") # DELETE
-def clients_delete(id: int, session: SessionDep):
+def clients_delete(id: int, session: SessionDep, current_user: User = Depends(get_current_user)):
     client = session.get(Client, id)
     
     if not client:
