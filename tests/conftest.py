@@ -15,9 +15,13 @@ from app.utils.session import get_session
 from app.utils.session import Session
 from app.utils.database import create_db_and_tables
 
+
+
 @pytest.fixture(autouse=True)
 def setup_database():
     create_db_and_tables()
+    
+    
     
 @pytest.fixture
 def auth_headers(client):
@@ -46,6 +50,8 @@ def auth_headers(client):
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
+
+
 @pytest.fixture
 def client_data():
     return {
@@ -56,13 +62,19 @@ def client_data():
         "cli_address": "Rua Exemplo 123"
     }
 
+
+
 @pytest.fixture
 def client():
     return TestClient(app)
 
+
+
 @pytest.fixture
 def session():
     return next(get_session())
+
+
 
 @pytest.fixture
 def client_obj(session: Session):
@@ -77,6 +89,8 @@ def client_obj(session: Session):
     session.commit()
     session.refresh(client)
     return client
+
+
 
 @pytest.fixture
 def products_obj(session: Session):
@@ -110,8 +124,14 @@ def products_obj(session: Session):
     session.commit()
     return products
 
+
+
 @pytest.fixture
-def order_obj(client_obj, products_obj, session: Session):
+def order_obj(
+    client_obj, 
+    products_obj, 
+    session: Session
+):
     order = Order(
         order_section=SectionType.blusas,
         order_cli=client_obj.cli_id,
@@ -127,6 +147,8 @@ def order_obj(client_obj, products_obj, session: Session):
     session.commit()
     session.refresh(order)
     return order
+
+
 
 @pytest.fixture
 def create_product(session):
@@ -149,6 +171,8 @@ def create_product(session):
     session.delete(product)
     session.commit()
 
+
+
 @pytest.fixture
 def admin_user(session: Session):
     admin = User(
@@ -165,10 +189,14 @@ def admin_user(session: Session):
     session.refresh(admin)
     return admin
 
+
+
 @pytest.fixture
 def admin_auth_headers(admin_user):
     token = create_access_token({"sub": admin_user.usr_email})
     return {"Authorization": f"Bearer {token}"}
+
+
 
 @pytest.fixture
 def new_user_data():
