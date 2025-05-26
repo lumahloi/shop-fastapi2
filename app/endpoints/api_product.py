@@ -1,6 +1,7 @@
-from fastapi import Query, HTTPException, APIRouter, Depends
+from fastapi import Query, HTTPException, APIRouter, Depends, UploadFile, File
 from sqlmodel import select
-import sentry_sdk
+import sentry_sdk, os
+from uuid import uuid4
 from typing import  Annotated, Union
 from datetime import datetime
 from ..models.model_product import Product, ProductCreate, ProductUpdate
@@ -11,6 +12,48 @@ from ..models.model_user import User
 from ..utils.permissions import require_user_type
 
 router = APIRouter()
+
+
+@router.post("/products/{id}/upload-image", response_model=Product)
+def upload_product_image(
+    id: int,
+    session: SessionDep,
+    files: list[UploadFile] = File(...),
+    current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"]))
+):
+    try:
+        product = session.get(Product, id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Produto não encontrado.")
+
+        images_dir = os.path.join("static", "product_images")
+        os.makedirs(images_dir, exist_ok=True)
+
+        if not product.prod_imgs:
+            product.prod_imgs = []
+
+        for file in files:
+            ext = os.path.splitext(file.filename)[1]
+            filename = f"{uuid4().hex}{ext}"
+            file_path = os.path.join(images_dir, filename)
+
+            with open(file_path, "wb") as image_file:
+                image_file.write(file.file.read())
+
+            product.prod_imgs.append(f"/static/product_images/{filename}")
+
+        product.prod_lastupdate = datetime.utcnow()
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+
+        return product
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        raise HTTPException(status_code=500, detail="Erro ao fazer upload das imagens.")
+
 
 @router.get("/products", response_model=list[Product]) 
 def products_get(

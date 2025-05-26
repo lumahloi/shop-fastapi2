@@ -1,4 +1,4 @@
-import pytest
+import pytest, io
 from fastapi.testclient import TestClient
 from app.main import app
 from sqlmodel import Session
@@ -20,6 +20,27 @@ def session():
 @pytest.fixture
 def client():
     return TestClient(app)
+
+@pytest.fixture
+def create_product(session):
+    product = Product(
+        prod_cat="roupa",
+        prod_price=10.0,
+        prod_desc="Produto teste",
+        prod_barcode="1234567890123",
+        prod_section="masculino",
+        prod_initialstock=10,
+        prod_name="Camiseta Teste",
+        prod_size=["m"],
+        prod_color=["azul"],
+        prod_imgs=[]
+    )
+    session.add(product)
+    session.commit()
+    session.refresh(product)
+    yield product
+    session.delete(product)
+    session.commit()
 
 @pytest.fixture
 def auth_headers(client):
@@ -158,3 +179,32 @@ def test_delete_product(client, session: Session, auth_headers):
     response = client.delete(f"/products/{product.prod_id}", headers=auth_headers)
     assert response.status_code == 200, response.text
     assert response.json() == {"ok": True}
+
+def test_upload_product_image_success(create_product, client, auth_headers):
+    product = create_product
+    files = [
+        ("files", ("img1.png", io.BytesIO(b"fake image data 1"), "image/png")),
+        ("files", ("img2.jpg", io.BytesIO(b"fake image data 2"), "image/jpeg")),
+    ]
+    response = client.post(
+        f"/products/{product.prod_id}/upload-image",
+        files=files,
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "prod_imgs" in data
+    assert len(data["prod_imgs"]) == 2
+    assert data["prod_imgs"][0].endswith(".png") or data["prod_imgs"][0].endswith(".jpg")
+
+def test_upload_product_image_not_found(client, auth_headers):
+    files = [
+        ("files", ("img1.png", io.BytesIO(b"fake image data 1"), "image/png")),
+    ]
+    response = client.post(
+        "/products/999999/upload-image",
+        files=files,
+        headers=auth_headers
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Produto não encontrado."
