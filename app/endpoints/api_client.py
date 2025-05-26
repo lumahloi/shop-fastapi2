@@ -9,9 +9,8 @@ from ..models.model_user import User
 from ..utils.permissions import require_user_type
 
 router = APIRouter()
-
-# Listar todos os clientes, com suporte a paginação e filtro por nome e email.    
-@router.get("/clients", response_model=list[Client]) # GET
+   
+@router.get("/clients", response_model=list[Client])
 def clients_get(
     session: SessionDep, 
     name: str = Query(None, alias="name"),
@@ -35,9 +34,8 @@ def clients_get(
     return results
 
 
-
-# Criar um novo cliente, validando email e CPF únicos.    
-@router.post("/clients", response_model=Client) # POST
+  
+@router.post("/clients", response_model=Client) 
 def clients_post(session: SessionDep, data: ClientCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
     email_exists = session.exec(select(Client).where(Client.cli_email == data.cli_email)).first()
 
@@ -67,8 +65,7 @@ def clients_post(session: SessionDep, data: ClientCreate, current_user: User = D
 
 
 
-# Obter informações de um cliente específico.    
-@router.get("/clients/{id}", response_model=Client) # GET
+@router.get("/clients/{id}", response_model=Client)
 def clients_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
     client = session.get(Client, id)
     
@@ -79,8 +76,7 @@ def clients_get(id: int, session: SessionDep, current_user: User = Depends(requi
 
 
 
-# Atualizar informações de um cliente específico.
-@router.put("/clients/{id}", response_model=Client) # PUT
+@router.put("/clients/{id}", response_model=Client)
 def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor"]))):
     client = session.get(Client, id)
     
@@ -99,9 +95,8 @@ def clients_put(id: int, data: ClientUpdate, session: SessionDep, current_user: 
     return client
 
 
-
-# Excluir um cliente.    
-@router.delete("/clients/{id}") # DELETE
+  
+@router.delete("/clients/{id}")
 def clients_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     client = session.get(Client, id)
     

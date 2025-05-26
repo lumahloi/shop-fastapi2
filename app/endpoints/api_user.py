@@ -10,7 +10,6 @@ from ..utils.permissions import require_user_type
 
 router = APIRouter()
 
-# Autenticação de usuário.
 @router.post("/auth/login")
 def auth_login(session: SessionDep, data: UserLogin): 
     user = session.exec(select(User).where(User.usr_email == data.usr_email)).first()
@@ -23,8 +22,7 @@ def auth_login(session: SessionDep, data: UserLogin):
 
 
 
-# Registro de novo usuário.
-@router.post("/auth/register", response_model=User) # POST
+@router.post("/auth/register", response_model=User)
 def auth_register(session: SessionDep, data: UserCreate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     
     if data.usr_type not in VALID_USER_TYPES:
@@ -57,8 +55,7 @@ def auth_register(session: SessionDep, data: UserCreate, current_user: User = De
 
 
 
-# Mudar tipo do usuário
-@router.put("/auth/register/{id}", response_model=User) # PUT
+@router.put("/auth/register/{id}", response_model=User) 
 def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     
     user = session.get(User, id)
@@ -78,8 +75,7 @@ def change_user_type(session: SessionDep, data: UserUpdate, id: int, current_use
     return user
 
 
-
-# Refresh de token JWT.    
+ 
 @router.post("/auth/refresh-token")
 def auth_refresh_token(authorization: str = Header(...)):
     token = authorization.replace("Bearer ", "")

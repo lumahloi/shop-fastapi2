@@ -14,8 +14,7 @@ from ..utils.services import to_str_lower
 
 router = APIRouter()
 
-# Listar todos os pedidos, incluindo os seguintes filtros: período, seção dos produtos, id_pedido, status do pedido e cliente.
-@router.get("/orders", response_model=list[Order]) # GET
+@router.get("/orders", response_model=list[Order])
 def orders_get( 
     session: SessionDep,
     period: Union[date | None] = Query(None, alias="period"),
@@ -50,8 +49,7 @@ def orders_get(
     
     return results
     
-
-# Criar um novo pedido contendo múltiplos produtos, validando estoque disponível.    
+   
 @router.post("/orders", response_model=Order)
 def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "vendedor", "atendente"]))):
     client = session.exec(select(Client).where(Client.cli_id == data.order_cli)).first()
@@ -86,8 +84,7 @@ def orders_post(session: SessionDep, data: OrderCreate, current_user: User = Dep
     return new_order
  
 
-# Obter informações de um pedido específico.    
-@router.get("/orders/{id}", response_model=Order) # GET
+@router.get("/orders/{id}", response_model=Order) 
 def orders_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
     order = session.get(Order, id)
     
@@ -98,8 +95,7 @@ def orders_get(id: int, session: SessionDep, current_user: User = Depends(requir
 
 
 
-# Atualizar informações de um pedido específico, incluindo status do pedido.
-@router.put("/orders/{id}") # PUT
+@router.put("/orders/{id}")
 def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     data.order_status = to_str_lower(data.order_status)
     
@@ -121,8 +117,7 @@ def orders_put(id: int, session: SessionDep, data: OrderUpdate, current_user: Us
     
     
     
-# Excluir um pedido.
-@router.delete("/orders/{id}") # DELETE
+@router.delete("/orders/{id}") 
 def orders_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     order = session.get(Order, id)
     

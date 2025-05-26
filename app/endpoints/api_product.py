@@ -11,8 +11,7 @@ from ..utils.permissions import require_user_type
 
 router = APIRouter()
 
-# Listar todos os produtos, com suporte a paginação e filtros por categoria, preço e disponibilidade.
-@router.get("/products", response_model=list[Product]) # GET
+@router.get("/products", response_model=list[Product]) 
 def products_get(
     session: SessionDep,
     category: Union[CategoryType | None] = Query(None, alias="category"),
@@ -44,7 +43,7 @@ def products_get(
     
     
     
-@router.post("/products", response_model=Product)  # POST
+@router.post("/products", response_model=Product) 
 def products_post(session: SessionDep, data: ProductCreate, current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"]))):
     data.prod_size = [s.lower() for s in data.prod_size]
     data.prod_color = [c.lower() for c in data.prod_color]
@@ -102,8 +101,7 @@ def products_post(session: SessionDep, data: ProductCreate, current_user: User =
  
  
 
-# Obter informações de um produto específico.    
-@router.get("/products/{id}", response_model=Product) # GET
+@router.get("/products/{id}", response_model=Product)
 def products_get(id: int, session: SessionDep, current_user: User = Depends(require_user_type([]))):
     
     product = session.get(Product, id)
@@ -115,8 +113,7 @@ def products_get(id: int, session: SessionDep, current_user: User = Depends(requ
 
 
 
-#  Atualizar informações de um produto específico.
-@router.put("/products/{id}", response_model=Product)  # PUT
+@router.put("/products/{id}", response_model=Product) 
 def products_put(id: int, data: ProductUpdate, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente", "estoquista"]))):
     product = session.get(Product, id)
 
@@ -164,8 +161,7 @@ def products_put(id: int, data: ProductUpdate, session: SessionDep, current_user
 
 
 
-# Excluir um produto.    
-@router.delete("/products/{id}") # DELETE
+@router.delete("/products/{id}")
 def products_delete(id: int, session: SessionDep, current_user: User = Depends(require_user_type(["administrador", "gerente"]))):
     
     product = session.get(Product, id)
