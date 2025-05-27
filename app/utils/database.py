@@ -1,19 +1,24 @@
 from sqlmodel import SQLModel, create_engine
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 
-postgresql_file_name = "shop-fastapi"
-port = 5432
-host = 'postgres'
-user = 'postgres'
-password = 1234567890
+DATABASE_URL = "postgresql+psycopg2://postgres:1234567890@postgres:5432/shop-fastapi"
+engine = create_engine(DATABASE_URL)
 
-postgresql_url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{postgresql_file_name}"
-engine = create_engine(postgresql_url)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-def create_db_and_tables():
+def create_tables():
     with engine.connect() as conn:
-        conn.execute(text("DROP SCHEMA public CASCADE;"))
-        conn.execute(text("CREATE SCHEMA public;"))
+        conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
         conn.commit()
-    SQLModel.metadata.create_all(bind=engine)
+    
+    SQLModel.metadata.create_all(engine)
+    print("Tabelas criadas com sucesso!")

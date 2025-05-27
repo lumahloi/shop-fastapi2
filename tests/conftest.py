@@ -13,13 +13,13 @@ from app.models.model_user import User
 from app.utils.auth import create_access_token
 from app.utils.session import get_session
 from app.utils.session import Session
-from app.utils.database import create_db_and_tables
+from app.utils.database import create_tables
 
 
 
 @pytest.fixture(autouse=True)
 def setup_database():
-    create_db_and_tables()
+    create_tables()
     
     
     
