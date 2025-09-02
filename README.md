@@ -1,60 +1,60 @@
 # Shop FastAPI
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#) [![FastAPI](https://img.shields.io/badge/FastAPI-009485.svg?logo=fastapi&logoColor=white)](#) [![Postgres](https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white)](#) [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](#)
 
-## Tecnologias utilizadas
+## Technologies
 - **Backend**: Python;
-  - FastAPI, Pytest, bcrypt.
-- **Banco de dados**: PostgreSQL;
-- **Conteinerização**: Docker.
+- FastAPI, Pytest.
+- **Database**: PostgreSQL;
+- **Containerization**: Docker.
 
-## Funcionalidades
-- Autenticação, registro e login de usuário;
-- Refresh de token JWT;
-- Listar todos os clientes, com suporte a paginação e filtro por nome e email;
-- Criar um novo cliente, validando email e CPF únicos;
-- Obter informações de um cliente específico;
-- Atualizar informações de um cliente específico;
-- Excluir um cliente;
-- Listar todos os produtos, com suporte a paginação e filtros;
-- Criar um novo produto;
-- Obter informações de um produto específico;
-- Atualizar informações de um produto específico;
-- Excluir, deletar e atualizar imagens de produtos;
-- Excluir um produto;
-- Listar todos os pedidos, incluindo filtros;
-- Criar um novo pedido contendo múltiplos produtos, validando estoque disponível;
-- Obter informações de um pedido específico;
-- Atualizar informações de um pedido específico;
-- Excluir um pedido.
+## Functionalities
+- User authentication, registration, and login;
+- JWT token refresh;
+- List all customers, with support for paging and filtering by name and email;
+- Create a new customer, validating unique email and CPF numbers;
+- Get information for a specific customer;
+- Update information for a specific customer;
+- Delete a customer;
+- List all products, with support for paging and filters;
+- Create a new product;
+- Get information for a specific product;
+- Update information for a specific product;
+- Delete, delete, and update product images;
+- Delete a product;
+- List all orders, including filters;
+- Create a new order containing multiple products, validating available inventory;
+- Get information for a specific order;
+- Update information for a specific order;
+- Delete an order.
 
-## Estrutura do projeto
+## Structure
 ```bash
     shop-fastapi/
     ├── app/                         
-    │   ├── endpoints/                → lista de endpoints
+    │   ├── endpoints/                → endpoints list
     │   │   ├── api_client.py
     │   │   ├── api_order.py
     │   │   ├── api_product.py
     │   │   └── api_user.py
     │   │
-    │   ├── models/                   → lista de models
+    │   ├── models/                   → models list
     │   │   ├── model_client.py
     │   │   ├── model_order.py
     │   │   ├── model_product.py
     │   │   └── model_user.py
     │   │
-    │   ├── utils/                    → funções auxiliares
+    │   ├── utils/                    → auxiliar functions
     │   │   ├── auth.py         
     │   │   ├── custom_types.py
     │   │   ├── database.py
-    │   │   ├── ddependencies.py
+    │   │   ├── dependencies.py
     │   │   ├── permissions.py
     │   │   ├── services.py       
     │   │   └── session.py
     │   │
     │   └── main.py
     │  
-    ├── tests/                        → lista de testes
+    ├── tests/                        → test list
     │   ├── conftest.py
     │   ├── tests_clients.py
     │   ├── tests_orders.py
@@ -68,29 +68,29 @@
     └── requirements.txt
 ```
 
-## Como rodar localmente
-Passo a passo de como rodar o projeto localmente na sua máquina.
-### Pré-requisitos
-- **Git**: instale a versão mais recente oficial clicando [aqui](https://git-scm.com/downloads);
-- **Docker**: instale a versão mais recente oficial clicando [aqui](https://www.docker.com/get-started/);
+## How to Run Locally
+Step-by-step instructions on how to run the project locally on your machine.
+### Prerequisites
+- **Git**: Install the latest official version by clicking [here](https://git-scm.com/downloads);
+- **Docker**: Install the latest official version by clicking [here](https://www.docker.com/get-started/);
 
 
-### Instalação
-Clone o repositório.
+### Installation
+Clone the repository.
 ```bash
 git clone https://github.com/lumahloi/shop-fastapi2.git
 ```
 
-### Rodando localmente
-Rode o ```Docker```.
+### Running Locally
+Run ```Docker```.
 ```bash
 docker-compose up --build
 ```
 
 ## APIs
-Em ```localhost:8000/docs``` é possível visualizar a documentação das APIs.
+In ```localhost:8000/docs``` you can view the API documentation.
 
-## Autora
+## Author
 <img src="https://github.com/lumahloi.png" width="80" align="left"/>
 
 ***Lumah Pereira***
